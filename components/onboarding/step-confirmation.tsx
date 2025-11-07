@@ -15,7 +15,6 @@ import { Input } from '@/components/ui/input'
 import { Loader2, Sparkles } from 'lucide-react'
 import { SECTORS } from '@/lib/seed/sectors'
 import { generateUniversalPrompt } from '@/lib/ai/prompt-generator'
-import { createAgent } from '@/lib/db/agents'
 import { getUser } from '@/lib/supabase/auth'
 
 const BUSINESS_TYPE_LABELS = {
@@ -64,25 +63,31 @@ export function StepConfirmation() {
         sectorTasks: sector?.common_tasks || []
       })
 
-      // Create agent in database
-      const result = await createAgent({
-        user_id: user.id,
-        name: agentName,
-        sector_id: null, // We'll look up the actual DB ID later; for now we use slug
-        system_prompt: systemPrompt,
-        config: {
-          sectorSlug: data.sectorSlug,
-          sectorName: data.sectorName,
-          businessType: data.businessType,
-          mainClients: data.mainClients,
-          specificities: data.specificities,
-          communicationStyle: data.communicationStyle
+      // Create agent via API route
+      const response = await fetch('/api/agents/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        is_active: true
+        body: JSON.stringify({
+          name: agentName,
+          sector_id: null, // We'll look up the actual DB ID later; for now we use slug
+          system_prompt: systemPrompt,
+          settings: {
+            sectorSlug: data.sectorSlug,
+            sectorName: data.sectorName,
+            businessType: data.businessType,
+            mainClients: data.mainClients,
+            specificities: data.specificities,
+            communicationStyle: data.communicationStyle
+          }
+        })
       })
 
+      const result = await response.json()
+
       if (!result.success) {
-        throw new Error(result.error?.message || 'Erreur lors de la création')
+        throw new Error(result.error || 'Erreur lors de la création')
       }
 
       // Reset onboarding state

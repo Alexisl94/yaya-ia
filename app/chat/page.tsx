@@ -3,7 +3,7 @@
  * Main interface for interacting with AI agents
  */
 
-import { getUserServer } from '@/lib/supabase/auth'
+import { getUserServer } from '@/lib/supabase/auth-server'
 import { redirect } from 'next/navigation'
 import { ChatPageClient } from './chat-page-client'
 

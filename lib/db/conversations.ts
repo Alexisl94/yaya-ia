@@ -126,16 +126,17 @@ export async function getConversationById(
     }
 
     // Get message count if requested
-    if (options.includeMessageCount && data) {
+    if (options.includeMessageCount && data && typeof data === 'object' && 'id' in data) {
       const { count } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('conversation_id', conversationId)
 
-      ;(data as ConversationWithRelations).message_count = count || 0
+      const conversationData = data as ConversationWithRelations
+      conversationData.message_count = count || 0
     }
 
-    return { success: true, data }
+    return { success: true, data: data as unknown as ConversationWithRelations | null }
   } catch (error) {
     return {
       success: false,

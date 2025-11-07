@@ -21,7 +21,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   const isUser = message.role === 'user'
   const isAssistant = message.role === 'assistant'
-  const isError = message.metadata?.error
+  const isError = Boolean(message.metadata?.error)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content)

@@ -68,12 +68,12 @@ export function ChatArea() {
       <div className="flex items-center justify-between border-b px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-xl">
-            {agent.profession ? agent.profession.charAt(0) : '🤖'}
+            {agent.name.charAt(0)}
           </div>
           <div>
             <h2 className="font-semibold">{agent.name}</h2>
             <p className="text-sm text-muted-foreground">
-              {agent.profession || agent.description}
+              {agent.description || 'Assistant IA personnalisé'}
             </p>
           </div>
         </div>

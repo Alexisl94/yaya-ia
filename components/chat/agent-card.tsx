@@ -19,8 +19,8 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentCardProps) {
-  // Get first letter of profession/name for avatar
-  const avatarText = agent.profession?.[0] || agent.name[0] || '🤖'
+  // Get first letter of name for avatar
+  const avatarText = agent.name[0] || '🤖'
 
   return (
     <button
@@ -60,14 +60,14 @@ export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentC
             )}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {agent.profession && (
-              <span className="truncate">{agent.profession}</span>
+            {agent.description && (
+              <span className="truncate">{agent.description}</span>
+            )}
+            {messageCount > 0 && agent.description && (
+              <span>•</span>
             )}
             {messageCount > 0 && (
-              <>
-                <span>•</span>
-                <span>{messageCount} message{messageCount > 1 ? 's' : ''}</span>
-              </>
+              <span>{messageCount} message{messageCount > 1 ? 's' : ''}</span>
             )}
           </div>
         </div>

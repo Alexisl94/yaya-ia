@@ -111,6 +111,10 @@ export async function POST(request: NextRequest) {
     const latency = Date.now() - startTime
 
     // Save assistant message to database
+    const totalTokens = response.usage
+      ? response.usage.input_tokens + response.usage.output_tokens
+      : null
+
     const { data: savedAssistantMessage, error: saveAssistantError } = await supabase
       .from('messages')
       .insert({
@@ -118,11 +122,11 @@ export async function POST(request: NextRequest) {
         role: 'assistant',
         content: response.content,
         model_used: response.model,
-        tokens_used: response.usage.input_tokens + response.usage.output_tokens,
+        tokens_used: totalTokens,
         latency_ms: latency,
         metadata: {
-          input_tokens: response.usage.input_tokens,
-          output_tokens: response.usage.output_tokens,
+          input_tokens: response.usage?.input_tokens || 0,
+          output_tokens: response.usage?.output_tokens || 0,
         },
       })
       .select()
@@ -147,10 +151,10 @@ export async function POST(request: NextRequest) {
         conversation_id: conversationId,
         event_type: 'message',
         model_used: response.model,
-        tokens_used: response.usage.input_tokens + response.usage.output_tokens,
+        tokens_used: totalTokens || 0,
         metadata: {
-          input_tokens: response.usage.input_tokens,
-          output_tokens: response.usage.output_tokens,
+          input_tokens: response.usage?.input_tokens || 0,
+          output_tokens: response.usage?.output_tokens || 0,
           latency_ms: latency,
         },
       })
@@ -163,7 +167,7 @@ export async function POST(request: NextRequest) {
         role: 'assistant',
         content: response.content,
         model_used: response.model,
-        tokens_used: response.usage.input_tokens + response.usage.output_tokens,
+        tokens_used: totalTokens,
         latency_ms: latency,
         created_at: savedAssistantMessage?.created_at || new Date().toISOString(),
       },
