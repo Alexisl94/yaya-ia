@@ -2,6 +2,8 @@
 
 Plateforme SaaS permettant aux professionnels libéraux de créer et gérer des agents IA personnalisés pour automatiser leurs tâches métier.
 
+> 🚀 Application déployée avec toutes les corrections de build Vercel
+
 ## Stack Technique
 
 - **Frontend & Backend**: Next.js 14 (App Router, TypeScript)
