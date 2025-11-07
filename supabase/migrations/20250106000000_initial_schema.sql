@@ -1,6 +1,7 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+
 -- =============================================
 -- USERS TABLE (extends Supabase auth.users)
 -- =============================================
@@ -327,8 +328,8 @@ INSERT INTO public.sectors (name, slug, description, icon, color) VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 -- Sample agent templates
-INSERT INTO public.agent_templates (sector_id, name, description, system_prompt, suggested_tasks, default_model, is_featured) 
-SELECT 
+INSERT INTO public.agent_templates (sector_id, name, description, system_prompt, suggested_tasks, default_model, is_featured)
+SELECT
   s.id,
   'Assistant Événementiel',
   'Aide à la planification et gestion d''événements',
@@ -340,7 +341,7 @@ FROM public.sectors s WHERE s.slug = 'evenementiel'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.agent_templates (sector_id, name, description, system_prompt, suggested_tasks, default_model, is_featured)
-SELECT 
+SELECT
   s.id,
   'Agent Immobilier',
   'Assistant pour la gestion immobilière',
@@ -357,7 +358,7 @@ ON CONFLICT DO NOTHING;
 
 -- Vue pour les statistiques d'utilisation par user
 CREATE OR REPLACE VIEW public.user_usage_stats AS
-SELECT 
+SELECT
   u.id AS user_id,
   u.email,
   u.subscription_tier,

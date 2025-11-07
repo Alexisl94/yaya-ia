@@ -30,18 +30,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 3.5. Get sector_id from slug if not provided
+    let finalSectorId = sector_id
+    if (!finalSectorId && settings?.sectorSlug) {
+      const { createClient } = await import('@/lib/supabase/server')
+      const supabase = await createClient()
+      const { data: sector } = await supabase
+        .from('sectors')
+        .select('id')
+        .eq('slug', settings.sectorSlug)
+        .single()
+
+      if (sector) {
+        finalSectorId = sector.id
+      } else {
+        // Fallback: use first sector
+        const { data: firstSector } = await supabase
+          .from('sectors')
+          .select('id')
+          .limit(1)
+          .single()
+        finalSectorId = firstSector?.id
+      }
+    }
+
     // 4. Create agent in database
     const result = await createAgent({
       user_id: user.id,
       name,
-      sector_id,
+      sector_id: finalSectorId,
       system_prompt,
       settings
     })
 
     if (!result.success) {
+      console.error('Failed to create agent:', result.error)
       return NextResponse.json(
-        { success: false, error: result.error },
+        { success: false, error: result.error?.message || 'Failed to create agent' },
         { status: 500 }
       )
     }

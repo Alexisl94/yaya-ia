@@ -42,17 +42,50 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (agentError || !agent) {
+      console.error('Agent not found:', agentError)
       return NextResponse.json(
         { error: 'Agent not found' },
         { status: 404 }
       )
     }
 
+    // Check if conversation exists, create if not
+    let finalConversationId = conversationId
+    const { data: existingConv } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('id', conversationId)
+      .single()
+
+    if (!existingConv) {
+      // Create new conversation
+      const { data: newConv, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          user_id: user.id,
+          agent_id: agentId,
+          title: 'Nouvelle conversation',
+          status: 'active'
+        })
+        .select()
+        .single()
+
+      if (convError || !newConv) {
+        console.error('Failed to create conversation:', convError)
+        return NextResponse.json(
+          { error: 'Failed to create conversation' },
+          { status: 500 }
+        )
+      }
+
+      finalConversationId = newConv.id
+    }
+
     // Fetch conversation history
     const { data: messages, error: messagesError } = await supabase
       .from('messages')
       .select('*')
-      .eq('conversation_id', conversationId)
+      .eq('conversation_id', finalConversationId)
       .order('created_at', { ascending: true })
       .limit(20) // Limit to last 20 messages for context
 
@@ -77,7 +110,7 @@ export async function POST(request: NextRequest) {
     const { data: savedUserMessage, error: saveUserError } = await supabase
       .from('messages')
       .insert({
-        conversation_id: conversationId,
+        conversation_id: finalConversationId,
         role: 'user',
         content: message,
         metadata: {},
@@ -95,7 +128,7 @@ export async function POST(request: NextRequest) {
       agent.system_prompt,
       conversationHistory,
       {
-        model: agent.model === 'claude' ? 'claude-3-5-sonnet-20241022' : undefined,
+        model: agent.model === 'claude' ? 'claude-3-haiku-20240307' : undefined,
         temperature: agent.temperature || 1,
         maxTokens: agent.max_tokens || 4096,
       }
@@ -118,7 +151,7 @@ export async function POST(request: NextRequest) {
     const { data: savedAssistantMessage, error: saveAssistantError } = await supabase
       .from('messages')
       .insert({
-        conversation_id: conversationId,
+        conversation_id: finalConversationId,
         role: 'assistant',
         content: response.content,
         model_used: response.model,
@@ -140,7 +173,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('conversations')
       .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId)
+      .eq('id', finalConversationId)
 
     // Log usage for billing/analytics
     await supabase
@@ -148,7 +181,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         agent_id: agentId,
-        conversation_id: conversationId,
+        conversation_id: finalConversationId,
         event_type: 'message',
         model_used: response.model,
         tokens_used: totalTokens || 0,

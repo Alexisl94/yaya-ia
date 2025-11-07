@@ -28,7 +28,7 @@ export async function sendMessage(
 ) {
   try {
     const response = await anthropic.messages.create({
-      model: options?.model || 'claude-3-5-sonnet-20241022',
+      model: options?.model || 'claude-3-haiku-20240307',
       max_tokens: options?.maxTokens || 4096,
       temperature: options?.temperature || 1,
       system: systemPrompt,

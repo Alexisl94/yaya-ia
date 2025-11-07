@@ -5,134 +5,104 @@
 
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ChatLayout } from '@/components/layouts/chat-layout'
 import { ChatSidebar } from '@/components/chat/sidebar'
 import { ChatArea } from '@/components/chat/chat-area'
-import { useChatStore } from '@/lib/store/chat-store'
-import type { Agent } from '@/types/database'
+import { useChatStore, type ChatConversation } from '@/lib/store/chat-store'
+import { createClient } from '@/lib/supabase/client'
+import { v4 as uuidv4 } from 'uuid'
 
 interface ChatPageClientProps {
   userId: string
 }
 
-// Mock data for testing UI
-const MOCK_AGENTS: Agent[] = [
-  {
-    id: 'agent-1',
-    user_id: 'user-1',
-    sector_id: 'sector-marketing',
-    template_id: null,
-    name: 'Assistant Marketing',
-    description: 'Expert en stratégie marketing digital',
-    system_prompt: 'Tu es un expert en marketing digital...',
-    model: 'claude',
-    temperature: 0.7,
-    max_tokens: 2000,
-    is_active: true,
-    settings: {},
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'agent-2',
-    user_id: 'user-1',
-    sector_id: 'sector-events',
-    template_id: null,
-    name: 'Assistant Événementiel',
-    description: 'Spécialiste en organisation d\'événements',
-    system_prompt: 'Tu es un expert en organisation d\'événements...',
-    model: 'claude',
-    temperature: 0.7,
-    max_tokens: 2000,
-    is_active: true,
-    settings: {},
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'agent-3',
-    user_id: 'user-1',
-    sector_id: 'sector-accounting',
-    template_id: null,
-    name: 'Assistant Comptable',
-    description: 'Expert en comptabilité et fiscalité',
-    system_prompt: 'Tu es un expert-comptable...',
-    model: 'claude',
-    temperature: 0.7,
-    max_tokens: 2000,
-    is_active: true,
-    settings: {},
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
 export function ChatPageClient({ userId }: ChatPageClientProps) {
-  const { setAgents, agents, setConversations, selectedAgentId } = useChatStore()
+  const searchParams = useSearchParams()
+  const agentIdFromUrl = searchParams.get('agent')
 
-  // Initialize with mock data
+  const {
+    setAgents,
+    selectAgent,
+    selectConversation,
+    createConversation,
+    setLoading,
+    setError
+  } = useChatStore()
+
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Load real data from database
   useEffect(() => {
-    if (agents.length === 0) {
-      setAgents(MOCK_AGENTS)
+    async function loadData() {
+      if (isInitialized) return
 
-      // Add some mock conversations for the first agent
-      const mockConversations = [
-        {
-          id: 'conv-1',
-          user_id: userId,
-          agent_id: 'agent-1',
-          title: 'Stratégie SEO pour 2024',
-          summary: 'Discussion sur les meilleures pratiques SEO',
-          status: 'active' as const,
-          metadata: {},
-          created_at: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-          id: 'conv-2',
-          user_id: userId,
-          agent_id: 'agent-1',
-          title: 'Campagne Google Ads',
-          summary: 'Optimisation budget publicitaire',
-          status: 'active' as const,
-          metadata: {},
-          created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          updated_at: new Date(Date.now() - 172800000).toISOString(),
-        },
-        {
-          id: 'conv-3',
-          user_id: userId,
-          agent_id: 'agent-1',
-          title: 'Stratégie réseaux sociaux',
-          summary: 'Plan de contenu pour Instagram et LinkedIn',
-          status: 'active' as const,
-          metadata: {},
-          created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-          updated_at: new Date(Date.now() - 259200000).toISOString(),
-        },
-      ]
+      try {
+        setLoading(true)
+        const supabase = createClient()
 
-      setConversations('agent-1', mockConversations)
+        // 1. Load all user's agents
+        const { data: agents, error: agentsError } = await supabase
+          .from('agents')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
 
-      // Add mock conversations for second agent
-      const mockConversations2 = [
-        {
-          id: 'conv-4',
+        if (agentsError) {
+          console.error('Error loading agents:', agentsError)
+          setError('Impossible de charger vos agents')
+          return
+        }
+
+        if (!agents || agents.length === 0) {
+          setError('Aucun agent trouvé. Veuillez créer un agent d\'abord.')
+          return
+        }
+
+        setAgents(agents)
+
+        // 2. Select agent from URL or use first one
+        const selectedAgentId = agentIdFromUrl || agents[0].id
+        const selectedAgent = agents.find(a => a.id === selectedAgentId)
+
+        if (!selectedAgent) {
+          setError('Agent non trouvé')
+          return
+        }
+
+        selectAgent(selectedAgentId)
+
+        // 3. Create a new conversation automatically
+        const newConversationId = uuidv4()
+        const newConversation: ChatConversation = {
+          id: newConversationId,
           user_id: userId,
-          agent_id: 'agent-2',
-          title: 'Planification mariage juin 2024',
-          summary: 'Organisation complète pour 150 invités',
-          status: 'active' as const,
+          agent_id: selectedAgentId,
+          title: 'Nouvelle conversation',
+          summary: null,
+          status: 'active',
           metadata: {},
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ]
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
 
-      setConversations('agent-2', mockConversations2)
+        createConversation(selectedAgentId, newConversation)
+        selectConversation(newConversationId)
+
+        setIsInitialized(true)
+        setError(null)
+      } catch (error) {
+        console.error('Error initializing chat:', error)
+        setError('Erreur lors de l\'initialisation du chat')
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [setAgents, setConversations, agents.length, userId])
+
+    loadData()
+  }, [userId, agentIdFromUrl, isInitialized, setAgents, selectAgent, selectConversation, createConversation, setLoading, setError])
 
   return (
     <ChatLayout sidebar={<ChatSidebar />}>
