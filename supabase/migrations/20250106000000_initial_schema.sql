@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS public.agents (
   description TEXT,
   system_prompt TEXT NOT NULL,
   model TEXT NOT NULL DEFAULT 'claude' CHECK (model IN ('claude', 'gpt')),
+  agent_type TEXT NOT NULL DEFAULT 'companion' CHECK (agent_type IN ('companion', 'task')),
   temperature DECIMAL(3,2) DEFAULT 0.7 CHECK (temperature >= 0 AND temperature <= 2),
   max_tokens INTEGER DEFAULT 2000 CHECK (max_tokens > 0),
   is_active BOOLEAN NOT NULL DEFAULT true,
@@ -77,6 +78,7 @@ CREATE TABLE IF NOT EXISTS public.agents (
 CREATE INDEX idx_agents_user_id ON public.agents(user_id);
 CREATE INDEX idx_agents_sector_id ON public.agents(sector_id);
 CREATE INDEX idx_agents_is_active ON public.agents(is_active);
+CREATE INDEX idx_agents_agent_type ON public.agents(agent_type);
 
 -- =============================================
 -- CONVERSATIONS TABLE
@@ -379,6 +381,7 @@ COMMENT ON TABLE public.users IS 'Extended user profiles linked to Supabase Auth
 COMMENT ON TABLE public.sectors IS 'Business sectors for agent categorization';
 COMMENT ON TABLE public.agent_templates IS 'Pre-configured agent templates by sector';
 COMMENT ON TABLE public.agents IS 'User-created AI agents';
+COMMENT ON COLUMN public.agents.agent_type IS 'Type of agent: companion (full context, generalist) or task (specific purpose)';
 COMMENT ON TABLE public.conversations IS 'Conversation threads between users and agents';
 COMMENT ON TABLE public.messages IS 'Individual messages in conversations';
 COMMENT ON TABLE public.usage_logs IS 'Usage tracking for billing and analytics';

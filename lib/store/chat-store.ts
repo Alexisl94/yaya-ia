@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand'
-import type { Agent, Conversation, Message } from '@/types/database'
+import type { AgentWithRelations, Conversation, Message } from '@/types/database'
 
 export interface ChatMessage extends Omit<Message, 'conversation_id'> {
   // Add any UI-specific fields here
@@ -21,7 +21,7 @@ interface ChatStore {
   selectedConversationId: string | null
 
   // Data
-  agents: Agent[]
+  agents: AgentWithRelations[]
   conversations: Record<string, ChatConversation[]> // Keyed by agentId
   messages: Record<string, ChatMessage[]> // Keyed by conversationId
 
@@ -31,10 +31,10 @@ interface ChatStore {
   error: string | null
 
   // Actions - Agents
-  setAgents: (agents: Agent[]) => void
+  setAgents: (agents: AgentWithRelations[]) => void
   selectAgent: (agentId: string | null) => void
-  addAgent: (agent: Agent) => void
-  updateAgent: (agentId: string, updates: Partial<Agent>) => void
+  addAgent: (agent: AgentWithRelations) => void
+  updateAgent: (agentId: string, updates: Partial<AgentWithRelations>) => void
   deleteAgent: (agentId: string) => void
 
   // Actions - Conversations
@@ -57,7 +57,7 @@ interface ChatStore {
   setError: (error: string | null) => void
 
   // Utility
-  getCurrentAgent: () => Agent | undefined
+  getCurrentAgent: () => AgentWithRelations | undefined
   getCurrentConversation: () => ChatConversation | undefined
   getCurrentMessages: () => ChatMessage[]
   getAgentConversations: (agentId: string) => ChatConversation[]

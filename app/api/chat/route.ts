@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { sendMessage } from '@/lib/llm/anthropic-client'
+import { generateConversationTitle } from '@/lib/llm/generate-title'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
@@ -174,6 +175,42 @@ export async function POST(request: NextRequest) {
       .from('conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', finalConversationId)
+
+    // Generate conversation title if this is the first assistant response
+    // (i.e., there are exactly 2 messages now: 1 user + 1 assistant)
+    const { count: messageCount } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('conversation_id', finalConversationId)
+
+    if (messageCount === 2) {
+      // Generate title asynchronously (don't wait for it to avoid slowing down response)
+      ;(async () => {
+        try {
+          const { data: allMessages } = await supabase
+            .from('messages')
+            .select('role, content')
+            .eq('conversation_id', finalConversationId)
+            .order('created_at', { ascending: true })
+            .limit(4)
+
+          if (allMessages && allMessages.length > 0) {
+            const titleResult = await generateConversationTitle(
+              allMessages as Array<{ role: 'user' | 'assistant'; content: string }>
+            )
+
+            if (titleResult.success && titleResult.title) {
+              await supabase
+                .from('conversations')
+                .update({ title: titleResult.title })
+                .eq('id', finalConversationId)
+            }
+          }
+        } catch (error) {
+          console.error('Failed to generate conversation title:', error)
+        }
+      })()
+    }
 
     // Log usage for billing/analytics
     await supabase

@@ -33,20 +33,20 @@ export function MessageSkeleton() {
 
 export function TypingIndicator() {
   return (
-    <div className="flex gap-3 animate-fade-in">
-      {/* Avatar */}
-      <Avatar className="h-9 w-9 shrink-0 border-2 border-secondary-200 bg-secondary-50">
-        <AvatarFallback className="text-secondary-600">
-          <Bot className="h-4 w-4" />
+    <div className="flex gap-2 animate-fade-in">
+      {/* Avatar plus petit */}
+      <Avatar className="h-7 w-7 shrink-0 border border-border bg-muted">
+        <AvatarFallback className="text-muted-foreground">
+          <Bot className="h-3.5 w-3.5" />
         </AvatarFallback>
       </Avatar>
 
-      {/* Typing animation */}
-      <div className="rounded-2xl border border-border bg-card px-5 py-3.5 shadow-sm">
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:-0.3s]"></div>
-          <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:-0.15s]"></div>
-          <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"></div>
+      {/* Typing animation - plus petite et discrète */}
+      <div className="rounded-xl bg-muted/50 px-3 py-2">
+        <div className="flex items-center gap-1">
+          <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.3s]"></div>
+          <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.15s]"></div>
+          <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/50"></div>
         </div>
       </div>
     </div>

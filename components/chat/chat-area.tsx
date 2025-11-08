@@ -11,7 +11,17 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Settings2, Plus, MessageSquare } from 'lucide-react'
 import { MessageBubble } from './message-bubble'
 import { MessageInput } from './message-input'
+import { TypingIndicator } from './loading-states'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ClientOnly } from '@/components/client-only'
 
 export function ChatArea() {
   const {
@@ -23,6 +33,8 @@ export function ChatArea() {
     selectConversation,
     createConversation,
   } = useChatStore()
+
+  const [agentSettingsOpen, setAgentSettingsOpen] = useState(false)
 
   const agent = getCurrentAgent()
   const messages = getCurrentMessages()
@@ -71,14 +83,39 @@ export function ChatArea() {
             {agent.name.charAt(0)}
           </div>
           <div>
-            <h2 className="font-semibold">{agent.name}</h2>
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="font-semibold">{agent.name}</h2>
+              {/* Agent Type Badge */}
+              <span className={cn(
+                "px-2 py-0.5 text-[10px] font-semibold rounded-full",
+                agent.agent_type === 'companion'
+                  ? "bg-amber-100 text-amber-700 border border-amber-300"
+                  : "bg-purple-100 text-purple-700 border border-purple-300"
+              )}>
+                {agent.agent_type === 'companion' ? '✨ COMPAGNON' : '🎯 TÂCHE'}
+              </span>
+              {/* LLM Badge */}
+              <span className={cn(
+                "px-2 py-0.5 text-[10px] font-semibold rounded-full",
+                agent.model === 'claude'
+                  ? "bg-orange-100 text-orange-700 border border-orange-300"
+                  : "bg-green-100 text-green-700 border border-green-300"
+              )}>
+                {agent.model === 'claude' ? 'CLAUDE' : 'GPT'}
+              </span>
+            </div>
             <p className="text-sm text-muted-foreground">
               {agent.description || 'Assistant IA personnalisé'}
             </p>
           </div>
         </div>
 
-        <Button variant="ghost" size="icon">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setAgentSettingsOpen(true)}
+          title="Paramètres de l'agent"
+        >
           <Settings2 className="h-5 w-5" />
         </Button>
       </div>
@@ -165,6 +202,8 @@ export function ChatArea() {
                 {messages.map((message) => (
                   <MessageBubble key={message.id} message={message} />
                 ))}
+                {/* Typing indicator when agent is responding */}
+                {messages.some(msg => msg.isLoading) && <TypingIndicator />}
               </div>
             )}
           </ScrollArea>
@@ -175,6 +214,51 @@ export function ChatArea() {
           </div>
         </>
       )}
+
+      {/* Agent Settings Dialog */}
+      <ClientOnly>
+        <Dialog open={agentSettingsOpen} onOpenChange={setAgentSettingsOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Paramètres de l'agent : {agent?.name}</DialogTitle>
+              <DialogDescription>
+                Consultez et modifiez les paramètres de votre agent
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Informations</h3>
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Nom</p>
+                    <p className="text-sm font-medium">{agent?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Description</p>
+                    <p className="text-sm">{agent?.description || 'Aucune description'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Modèle</p>
+                    <p className="text-sm">{agent?.model || 'Non défini'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Secteur</p>
+                    <p className="text-sm">{agent?.sector?.name || 'Non défini'}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Instructions système</h3>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {agent?.system_prompt || 'Aucune instruction système définie'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </ClientOnly>
     </div>
   )
 }

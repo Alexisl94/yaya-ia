@@ -2,23 +2,42 @@
 
 /**
  * Onboarding Stepper
- * Visual progress indicator for the 4-step onboarding flow
+ * Visual progress indicator for the dynamic onboarding flow
+ * Companion: 7 steps | Task: 5 steps
  */
 
 import { Check } from 'lucide-react'
+import { useOnboardingStore } from '@/lib/store/onboarding-store'
 
 interface OnboardingStepperProps {
   currentStep: number
 }
 
-const steps = [
-  { number: 1, title: 'Secteur' },
-  { number: 2, title: 'Contexte' },
-  { number: 3, title: 'Préférences' },
-  { number: 4, title: 'Confirmation' },
+const companionSteps = [
+  { number: 1, title: 'Type' },
+  { number: 2, title: 'Secteur' },
+  { number: 3, title: 'Identité' },
+  { number: 4, title: 'Contexte' },
+  { number: 5, title: 'Objectifs' },
+  { number: 6, title: 'Style' },
+  { number: 7, title: 'Modèle' },
+  { number: 8, title: 'Validation' },
+]
+
+const taskSteps = [
+  { number: 1, title: 'Type' },
+  { number: 2, title: 'Secteur' },
+  { number: 3, title: 'Mission' },
+  { number: 4, title: 'Style' },
+  { number: 5, title: 'Modèle' },
+  { number: 6, title: 'Validation' },
 ]
 
 export function OnboardingStepper({ currentStep }: OnboardingStepperProps) {
+  const { isCompanionAgent, isTaskAgent } = useOnboardingStore()
+
+  // Determine which steps to show
+  const steps = isTaskAgent() ? taskSteps : companionSteps
   return (
     <div className="w-full py-6">
       <div className="flex items-center justify-between max-w-2xl mx-auto">

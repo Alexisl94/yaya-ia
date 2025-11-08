@@ -7,6 +7,7 @@ export interface Agent {
   profession: string
   system_prompt: string
   model: 'claude' | 'gpt'
+  agent_type: 'companion' | 'task' // Type d'agent: Compagnon ou Tâche
   created_at: string
   updated_at: string
 }

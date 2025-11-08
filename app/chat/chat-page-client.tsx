@@ -27,8 +27,12 @@ export function ChatPageClient({ userId }: ChatPageClientProps) {
     selectAgent,
     selectConversation,
     createConversation,
+    setConversations,
+    setMessages,
     setLoading,
-    setError
+    setError,
+    selectedConversationId,
+    selectedAgentId
   } = useChatStore()
 
   const [isInitialized, setIsInitialized] = useState(false)
@@ -74,22 +78,28 @@ export function ChatPageClient({ userId }: ChatPageClientProps) {
 
         selectAgent(selectedAgentId)
 
-        // 3. Create a new conversation automatically
-        const newConversationId = uuidv4()
-        const newConversation: ChatConversation = {
-          id: newConversationId,
-          user_id: userId,
-          agent_id: selectedAgentId,
-          title: 'Nouvelle conversation',
-          summary: null,
-          status: 'active',
-          metadata: {},
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+        // 3. Load existing conversations for the selected agent
+        const { data: conversations, error: conversationsError } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('agent_id', selectedAgentId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+
+        if (conversationsError) {
+          console.error('Error loading conversations:', conversationsError)
         }
 
-        createConversation(selectedAgentId, newConversation)
-        selectConversation(newConversationId)
+        if (conversations && conversations.length > 0) {
+          // Load conversations into the store
+          setConversations(selectedAgentId, conversations)
+
+          // Optionally select the most recent conversation
+          // selectConversation(conversations[0].id)
+        }
+
+        // Don't automatically create a conversation anymore
+        // The user will create one when they start chatting
 
         setIsInitialized(true)
         setError(null)
@@ -102,7 +112,71 @@ export function ChatPageClient({ userId }: ChatPageClientProps) {
     }
 
     loadData()
-  }, [userId, agentIdFromUrl, isInitialized, setAgents, selectAgent, selectConversation, createConversation, setLoading, setError])
+  }, [userId, agentIdFromUrl, isInitialized, setAgents, selectAgent, selectConversation, createConversation, setConversations, setLoading, setError])
+
+  // Load conversations when agent changes
+  useEffect(() => {
+    async function loadAgentConversations() {
+      if (!selectedAgentId || !isInitialized) return
+
+      try {
+        const supabase = createClient()
+
+        const { data: conversations, error: conversationsError } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('agent_id', selectedAgentId)
+          .eq('status', 'active')
+          .order('updated_at', { ascending: false })
+
+        if (conversationsError) {
+          console.error('Error loading conversations:', conversationsError)
+          return
+        }
+
+        if (conversations) {
+          setConversations(selectedAgentId, conversations)
+        }
+      } catch (error) {
+        console.error('Error loading conversations:', error)
+      }
+    }
+
+    loadAgentConversations()
+  }, [selectedAgentId, isInitialized, setConversations])
+
+  // Load messages when a conversation is selected
+  useEffect(() => {
+    async function loadMessages() {
+      if (!selectedConversationId) return
+
+      try {
+        const supabase = createClient()
+
+        const { data: messages, error: messagesError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', selectedConversationId)
+          .order('created_at', { ascending: true })
+
+        if (messagesError) {
+          console.error('Error loading messages:', messagesError)
+          // Initialize with empty array if error (conversation might be new)
+          setMessages(selectedConversationId, [])
+          return
+        }
+
+        // Set messages or empty array if none found
+        setMessages(selectedConversationId, messages || [])
+      } catch (error) {
+        console.error('Error loading messages:', error)
+        // Initialize with empty array on error
+        setMessages(selectedConversationId, [])
+      }
+    }
+
+    loadMessages()
+  }, [selectedConversationId, setMessages])
 
   return (
     <ChatLayout sidebar={<ChatSidebar />}>

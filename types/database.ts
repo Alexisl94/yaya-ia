@@ -69,6 +69,7 @@ export interface Agent {
   description: string | null;
   system_prompt: string;
   model: ModelType;
+  agent_type: 'companion' | 'task';
   temperature: number;
   max_tokens: number;
   is_active: boolean;
@@ -195,6 +196,7 @@ export interface CreateAgentInput {
   description?: string;
   system_prompt: string;
   model?: ModelType;
+  agent_type?: 'companion' | 'task';
   temperature?: number;
   max_tokens?: number;
   settings?: Record<string, unknown>;
@@ -205,6 +207,7 @@ export interface UpdateAgentInput {
   description?: string;
   system_prompt?: string;
   model?: ModelType;
+  agent_type?: 'companion' | 'task';
   temperature?: number;
   max_tokens?: number;
   is_active?: boolean;

@@ -5,7 +5,7 @@
 
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Menu, Settings, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { ClientOnly } from '@/components/client-only'
 
 interface ChatLayoutProps {
   children: ReactNode
@@ -24,6 +34,14 @@ interface ChatLayoutProps {
 
 export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
   const { isSidebarOpen, toggleSidebar } = useChatStore()
+  const router = useRouter()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -50,31 +68,39 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="hover:bg-accent">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-accent"
+            onClick={() => setSettingsOpen(true)}
+            title="Paramètres"
+          >
             <Settings className="h-5 w-5" />
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="hover:bg-accent">
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profil</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Paramètres</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive">
-                Déconnexion
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ClientOnly>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="hover:bg-accent">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => router.push('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profil</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Paramètres</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleLogout}>
+                  Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </ClientOnly>
         </div>
       </header>
 
@@ -105,6 +131,40 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
           />
         )}
       </div>
+
+      {/* Settings Dialog */}
+      <ClientOnly>
+        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Paramètres</DialogTitle>
+              <DialogDescription>
+                Gérez vos préférences et paramètres de l'application
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Apparence</h3>
+                <p className="text-sm text-muted-foreground">
+                  Les paramètres de thème seront bientôt disponibles.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Notifications</h3>
+                <p className="text-sm text-muted-foreground">
+                  Les paramètres de notifications seront bientôt disponibles.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Langue</h3>
+                <p className="text-sm text-muted-foreground">
+                  Français (par défaut)
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </ClientOnly>
     </div>
   )
 }

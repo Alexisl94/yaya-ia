@@ -26,66 +26,44 @@ export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentC
     <button
       onClick={onClick}
       className={cn(
-        'group relative w-full rounded-xl p-3 text-left transition-all',
+        'group relative w-full rounded-lg p-1.5 text-left transition-all',
         'hover:bg-accent/50',
-        isActive && 'bg-primary-50 border-2 border-primary-500 shadow-sm',
+        isActive && 'bg-primary/10 border border-primary/30 shadow-sm',
         !isActive && 'border border-transparent hover:border-border'
       )}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 min-w-0 w-full">
         {/* Avatar */}
         <Avatar className={cn(
-          'h-11 w-11 shrink-0 border-2 transition-colors',
+          'h-6 w-6 shrink-0 border transition-colors',
           isActive ? 'border-primary-500 bg-primary-100' : 'border-border bg-muted'
         )}>
           <AvatarFallback className={cn(
-            'text-base font-semibold',
+            'text-[10px] font-semibold',
             isActive ? 'text-primary-600' : 'text-muted-foreground'
           )}>
             {avatarText}
           </AvatarFallback>
         </Avatar>
 
-        {/* Agent info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <div className={cn(
-              'truncate font-semibold text-sm',
-              isActive && 'text-primary-700'
-            )}>
-              {agent.name}
-            </div>
-            {isActive && (
-              <div className="h-2 w-2 rounded-full bg-primary-500 animate-pulse" />
-            )}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {agent.description && (
-              <span className="truncate">{agent.description}</span>
-            )}
-            {messageCount > 0 && agent.description && (
-              <span>•</span>
-            )}
-            {messageCount > 0 && (
-              <span>{messageCount} message{messageCount > 1 ? 's' : ''}</span>
-            )}
-          </div>
+        {/* Agent info - avec contrôle strict de la largeur */}
+        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+          <span className={cn(
+            'truncate font-medium text-[11px] block max-w-full',
+            isActive && 'text-primary-700'
+          )}>
+            {agent.name}
+          </span>
+          {isActive && (
+            <div className="h-1 w-1 rounded-full bg-primary-500 animate-pulse shrink-0" />
+          )}
         </div>
 
         {/* Active indicator */}
         {isActive && (
-          <ChevronRight className="h-4 w-4 text-primary-600 shrink-0" />
+          <ChevronRight className="h-2.5 w-2.5 text-primary-600 shrink-0" />
         )}
       </div>
-
-      {/* Model badge */}
-      {agent.model && (
-        <div className="mt-2 flex items-center gap-2">
-          <Badge variant="secondary" className="text-[10px] py-0 h-5">
-            {agent.model === 'claude' ? '⚡ Claude' : '🤖 GPT'}
-          </Badge>
-        </div>
-      )}
     </button>
   )
 }

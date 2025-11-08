@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Copy, User, Bot, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import { MarkdownContent } from './markdown-content'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -61,22 +62,23 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             isError && 'bg-danger-50 border border-danger-200'
           )}
         >
-          {/* Message text */}
-          <div className={cn(
-            'whitespace-pre-wrap break-words text-sm leading-relaxed',
-            isUser && 'text-white',
-            isError && 'text-danger-700'
-          )}>
-            {message.content}
-          </div>
-
-          {/* Loading indicator */}
-          {message.isLoading && (
-            <div className="mt-2 flex items-center gap-1.5">
-              <div className="h-2 w-2 animate-bounce rounded-full bg-current [animation-delay:-0.3s]"></div>
-              <div className="h-2 w-2 animate-bounce rounded-full bg-current [animation-delay:-0.15s]"></div>
-              <div className="h-2 w-2 animate-bounce rounded-full bg-current"></div>
-            </div>
+          {/* Message text - hide if loading (will show TypingIndicator instead) */}
+          {!message.isLoading && (
+            <>
+              {isAssistant && !isError ? (
+                // Render markdown for assistant messages
+                <MarkdownContent content={message.content} />
+              ) : (
+                // Plain text for user messages and errors
+                <div className={cn(
+                  'whitespace-pre-wrap break-words text-sm leading-relaxed',
+                  isUser && 'text-white',
+                  isError && 'text-danger-700'
+                )}>
+                  {message.content}
+                </div>
+              )}
+            </>
           )}
 
           {/* Copy button */}

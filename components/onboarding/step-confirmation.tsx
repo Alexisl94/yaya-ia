@@ -23,6 +23,31 @@ const BUSINESS_TYPE_LABELS = {
   pme: 'PME (11-50 employés)'
 }
 
+const EXPERIENCE_LABELS = {
+  '0-2': 'Débutant (0-2 ans)',
+  '3-5': 'Intermédiaire (3-5 ans)',
+  '6-10': 'Expérimenté (6-10 ans)',
+  '10+': 'Expert (10+ ans)'
+}
+
+const PROJECT_SIZE_LABELS = {
+  small: 'Petits projets (< 5K€)',
+  medium: 'Projets moyens (5-20K€)',
+  large: 'Grands projets (> 20K€)',
+  mixed: 'Projets de toutes tailles'
+}
+
+const GOAL_LABELS: Record<string, string> = {
+  increase_revenue: 'Augmenter mon chiffre d\'affaires',
+  save_time: 'Gagner du temps',
+  find_clients: 'Trouver plus de clients',
+  improve_quality: 'Améliorer la qualité de service',
+  better_organization: 'Mieux m\'organiser',
+  expand_offer: 'Développer mon offre',
+  differentiate: 'Me différencier',
+  reduce_stress: 'Réduire le stress'
+}
+
 const STYLE_LABELS = {
   professional: 'Professionnel',
   accessible: 'Accessible',
@@ -30,7 +55,7 @@ const STYLE_LABELS = {
 }
 
 export function StepConfirmation() {
-  const { data, setAgentName, prevStep, reset } = useOnboardingStore()
+  const { data, setAgentName, prevStep, reset, isCompanionAgent, isTaskAgent } = useOnboardingStore()
   const router = useRouter()
 
   const [agentName, setAgentNameLocal] = useState(data.agentName || `Assistant ${data.sectorName}`)
@@ -39,6 +64,8 @@ export function StepConfirmation() {
 
   // Get sector details
   const sector = SECTORS.find(s => s.slug === data.sectorSlug)
+  const isCompanion = isCompanionAgent()
+  const isTask = isTaskAgent()
 
   const handleCreateAgent = async () => {
     if (!agentName.trim()) return
@@ -73,13 +100,28 @@ export function StepConfirmation() {
           name: agentName,
           sector_id: null, // We'll look up the actual DB ID later; for now we use slug
           system_prompt: systemPrompt,
+          model: data.selectedLLM || 'claude',
+          agent_type: data.agentType || 'companion',
           settings: {
             sectorSlug: data.sectorSlug,
             sectorName: data.sectorName,
+            agentType: data.agentType,
+            businessName: data.businessName,
             businessType: data.businessType,
+            location: data.location,
+            yearsExperience: data.yearsExperience,
             mainClients: data.mainClients,
             specificities: data.specificities,
-            communicationStyle: data.communicationStyle
+            typicalProjectSize: data.typicalProjectSize,
+            mainChallenges: data.mainChallenges,
+            toolsUsed: data.toolsUsed,
+            primaryGoals: data.primaryGoals,
+            businessValues: data.businessValues,
+            exampleProjects: data.exampleProjects,
+            taskDescription: data.taskDescription,
+            taskSpecificGoal: data.taskSpecificGoal,
+            communicationStyle: data.communicationStyle,
+            selectedLLM: data.selectedLLM
           }
         })
       })
@@ -123,50 +165,167 @@ export function StepConfirmation() {
             Récapitulatif
           </h3>
 
+          {/* Agent Type */}
+          <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+            <span className="text-2xl">{isCompanion ? '✨' : '🎯'}</span>
+            <div className="flex-1">
+              <p className="font-medium text-slate-900">Type d'agent</p>
+              <p className="text-sm text-slate-600">{isCompanion ? 'Assistant Compagnon' : 'Agent Tâche'}</p>
+            </div>
+          </div>
+
           {/* Sector */}
           <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
             <span className="text-2xl">{sector?.icon}</span>
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-slate-900">Secteur</p>
               <p className="text-sm text-slate-600">{data.sectorName}</p>
             </div>
           </div>
 
-          {/* Business Type */}
-          <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-            <span className="text-2xl">🏢</span>
-            <div>
-              <p className="font-medium text-slate-900">Type d'activité</p>
-              <p className="text-sm text-slate-600">
-                {data.businessType && BUSINESS_TYPE_LABELS[data.businessType]}
-              </p>
-            </div>
-          </div>
-
-          {/* Main Clients */}
-          <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-            <span className="text-2xl">👥</span>
-            <div>
-              <p className="font-medium text-slate-900">Clients principaux</p>
-              <p className="text-sm text-slate-600">{data.mainClients}</p>
-            </div>
-          </div>
-
-          {/* Specificities */}
-          {data.specificities && (
-            <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-              <span className="text-2xl">⭐</span>
-              <div>
-                <p className="font-medium text-slate-900">Spécificités</p>
-                <p className="text-sm text-slate-600">{data.specificities}</p>
+          {/* Task Agent specific info */}
+          {isTask && (
+            <>
+              {/* Task Description */}
+              <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                <span className="text-2xl">📝</span>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">Tâche principale</p>
+                  <p className="text-sm text-slate-600 whitespace-pre-line">{data.taskDescription}</p>
+                </div>
               </div>
-            </div>
+
+              {/* Task Goal */}
+              <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                <span className="text-2xl">🎯</span>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">Objectif</p>
+                  <p className="text-sm text-slate-600 whitespace-pre-line">{data.taskSpecificGoal}</p>
+                </div>
+              </div>
+            </>
           )}
 
-          {/* Communication Style */}
+          {/* Companion Agent specific info */}
+          {isCompanion && (
+            <>
+              {/* Business Identity */}
+              <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                <span className="text-2xl">🏢</span>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">Entreprise</p>
+                  <p className="text-sm text-slate-600">{data.businessName}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {data.businessType && BUSINESS_TYPE_LABELS[data.businessType]} • {data.location}
+                  </p>
+                </div>
+              </div>
+
+              {/* Experience */}
+              <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                <span className="text-2xl">📊</span>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">Expérience</p>
+                  <p className="text-sm text-slate-600">
+                    {data.yearsExperience && EXPERIENCE_LABELS[data.yearsExperience as keyof typeof EXPERIENCE_LABELS]}
+                  </p>
+                </div>
+              </div>
+
+              {/* Project Size */}
+              <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                <span className="text-2xl">📦</span>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">Taille de projets</p>
+                  <p className="text-sm text-slate-600">
+                    {data.typicalProjectSize && PROJECT_SIZE_LABELS[data.typicalProjectSize as keyof typeof PROJECT_SIZE_LABELS]}
+                  </p>
+                </div>
+              </div>
+
+              {/* Main Clients */}
+              <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                <span className="text-2xl">👥</span>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">Clients principaux</p>
+                  <p className="text-sm text-slate-600 whitespace-pre-line">{data.mainClients}</p>
+                </div>
+              </div>
+
+              {/* Main Challenges */}
+              <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                <span className="text-2xl">⚡</span>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900">Défis principaux</p>
+                  <p className="text-sm text-slate-600 whitespace-pre-line">{data.mainChallenges}</p>
+                </div>
+              </div>
+
+              {/* Primary Goals */}
+              {data.primaryGoals.length > 0 && (
+                <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                  <span className="text-2xl">🎯</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900">Objectifs</p>
+                    <ul className="text-sm text-slate-600 mt-1 space-y-1">
+                      {data.primaryGoals.map((goal, idx) => (
+                        <li key={idx}>• {GOAL_LABELS[goal] || goal}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Business Values */}
+              {data.businessValues && (
+                <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                  <span className="text-2xl">💎</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900">Valeurs</p>
+                    <p className="text-sm text-slate-600 whitespace-pre-line">{data.businessValues}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Example Projects */}
+              {data.exampleProjects && (
+                <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                  <span className="text-2xl">💼</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900">Exemples de projets</p>
+                    <p className="text-sm text-slate-600 whitespace-pre-line">{data.exampleProjects}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Specificities */}
+              {data.specificities && (
+                <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                  <span className="text-2xl">⭐</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900">Spécificités</p>
+                    <p className="text-sm text-slate-600 whitespace-pre-line">{data.specificities}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tools Used */}
+              {data.toolsUsed && (
+                <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
+                  <span className="text-2xl">🛠️</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900">Outils utilisés</p>
+                    <p className="text-sm text-slate-600">{data.toolsUsed}</p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Communication Style (both types) */}
           <div className="flex items-start gap-3">
             <span className="text-2xl">💬</span>
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-slate-900">Style de communication</p>
               <p className="text-sm text-slate-600">
                 {data.communicationStyle && STYLE_LABELS[data.communicationStyle]}

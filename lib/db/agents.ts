@@ -39,16 +39,19 @@ export async function createAgent(
   try {
     const supabase = await createClient()
 
+    // Direct INSERT without agent_type for now (will use DB default 'companion')
+    // TODO: Add agent_type back after forcing PostgREST schema cache reload
     const { data, error } = await supabase
       .from('agents')
       .insert({
         user_id: input.user_id,
         sector_id: input.sector_id,
-        template_id: input.template_id || null,
         name: input.name,
-        description: input.description || null,
         system_prompt: input.system_prompt,
         model: input.model || 'claude',
+        // agent_type: removed temporarily - uses DB default
+        template_id: input.template_id || null,
+        description: input.description || null,
         temperature: input.temperature || 0.7,
         max_tokens: input.max_tokens || 2000,
         settings: input.settings || {},
@@ -67,7 +70,7 @@ export async function createAgent(
       }
     }
 
-    return { success: true, data }
+    return { success: true, data: data as Agent }
   } catch (error) {
     return {
       success: false,

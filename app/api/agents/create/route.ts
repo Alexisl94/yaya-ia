@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse request body
     const body = await request.json()
-    const { name, sector_id, system_prompt, settings } = body
+    const { name, sector_id, system_prompt, model, agent_type, settings } = body
 
     // 3. Validate required fields
     if (!name || !system_prompt) {
@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
       name,
       sector_id: finalSectorId,
       system_prompt,
+      model: model || 'claude',
+      agent_type: agent_type || 'companion',
       settings
     })
 
