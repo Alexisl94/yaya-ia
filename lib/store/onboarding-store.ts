@@ -15,25 +15,24 @@ export interface OnboardingData {
   sectorName: string | null
   sectorSlug: string | null
 
-  // Step 2: Business Identity (for COMPANION agents)
+  // Step 2: Business Profile (UNIVERSAL - shared across all agents)
+  profileId: string | null // ID of existing business profile (if reusing)
   businessName: string
   businessType: 'freelance' | 'tpe' | 'pme' | null
   location: string // Ville, région
   yearsExperience: string | null // '0-2', '3-5', '6-10', '10+'
-
-  // Step 3: Detailed Context (for COMPANION agents)
   mainClients: string
   specificities: string
   typicalProjectSize: string // Petit, Moyen, Grand
   mainChallenges: string // Problématiques principales
   toolsUsed: string // Outils/logiciels utilisés
 
-  // Step 4: Goals & Values (for COMPANION agents)
+  // Step 3: Goals & Values (for COMPANION agents only)
   primaryGoals: string[] // Liste des objectifs principaux
   businessValues: string // Valeurs de l'entreprise
   exampleProjects: string // Exemples de projets récents
 
-  // Task Agent specific fields
+  // Task Agent specific fields (step 3 for task agents)
   taskDescription: string // Description de la tâche spécifique
   taskSpecificGoal: string // Objectif spécifique de cet agent tâche
 
@@ -54,6 +53,18 @@ interface OnboardingStore {
   // Actions
   setAgentType: (type: 'companion' | 'task') => void
   setSector: (sectorId: string, sectorName: string, sectorSlug: string) => void
+  setBusinessProfile: (profile: {
+    profileId: string | null
+    businessName: string
+    businessType: OnboardingData['businessType']
+    location: string
+    yearsExperience: string | null
+    mainClients: string
+    specificities: string
+    typicalProjectSize: string
+    mainChallenges: string
+    toolsUsed: string
+  }) => void
   setBusinessIdentity: (businessName: string, businessType: OnboardingData['businessType'], location: string, yearsExperience: string | null) => void
   setDetailedContext: (mainClients: string, specificities: string, typicalProjectSize: string, mainChallenges: string, toolsUsed: string) => void
   setGoalsAndValues: (primaryGoals: string[], businessValues: string, exampleProjects: string) => void
@@ -80,6 +91,7 @@ const initialData: OnboardingData = {
   sectorId: null,
   sectorName: null,
   sectorSlug: null,
+  profileId: null,
   businessName: '',
   businessType: null,
   location: '',
@@ -123,6 +135,23 @@ export const useOnboardingStore = create<OnboardingStore>()(
             agentName: state.data.agentType === 'task'
               ? `Agent ${sectorName}`
               : `Assistant ${sectorName}`,
+          },
+        })),
+
+      setBusinessProfile: (profile) =>
+        set((state) => ({
+          data: {
+            ...state.data,
+            profileId: profile.profileId,
+            businessName: profile.businessName,
+            businessType: profile.businessType,
+            location: profile.location,
+            yearsExperience: profile.yearsExperience,
+            mainClients: profile.mainClients,
+            specificities: profile.specificities,
+            typicalProjectSize: profile.typicalProjectSize,
+            mainChallenges: profile.mainChallenges,
+            toolsUsed: profile.toolsUsed,
           },
         })),
 
@@ -205,10 +234,10 @@ export const useOnboardingStore = create<OnboardingStore>()(
         })),
 
       getMaxStep: () => {
-        const { agentType } = get().data
-        // Companion: 8 steps (type, sector, identity, context, goals, style, LLM, confirmation)
-        // Task: 6 steps (type, sector, task definition, style, LLM, confirmation)
-        return agentType === 'companion' ? 8 : 6
+        // Both types now have 7 steps (type, sector, business profile, [goals OR task], style, LLM, confirmation)
+        // Companion: type, sector, business profile, goals & values, style, LLM, confirmation
+        // Task: type, sector, business profile, task definition, style, LLM, confirmation
+        return 7
       },
 
       isCompanionAgent: () => get().data.agentType === 'companion',

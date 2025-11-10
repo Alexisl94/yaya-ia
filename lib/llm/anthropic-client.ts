@@ -4,6 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import type { MessageParam, MessageCreateParams } from '@anthropic-ai/sdk/resources/messages'
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
@@ -14,12 +15,12 @@ const anthropic = new Anthropic({
  * Send a message to Claude and get a response
  *
  * @param systemPrompt - The system prompt for the agent
- * @param messages - Array of conversation messages
+ * @param messages - Array of conversation messages (can include multimodal content)
  * @param options - Optional configuration
  */
 export async function sendMessage(
   systemPrompt: string,
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  messages: MessageParam[],
   options?: {
     model?: string
     maxTokens?: number
@@ -57,12 +58,12 @@ export async function sendMessage(
  * Send a message with streaming response
  *
  * @param systemPrompt - The system prompt for the agent
- * @param messages - Array of conversation messages
+ * @param messages - Array of conversation messages (can include multimodal content)
  * @param options - Optional configuration
  */
 export async function* streamMessage(
   systemPrompt: string,
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  messages: MessageParam[],
   options?: {
     model?: string
     maxTokens?: number

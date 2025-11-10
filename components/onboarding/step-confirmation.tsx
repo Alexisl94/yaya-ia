@@ -16,6 +16,7 @@ import { Loader2, Sparkles } from 'lucide-react'
 import { SECTORS } from '@/lib/seed/sectors'
 import { generateUniversalPrompt } from '@/lib/ai/prompt-generator'
 import { getUser } from '@/lib/supabase/auth'
+import { AgentNameInput } from '@/components/chat/agent-name-input'
 
 const BUSINESS_TYPE_LABELS = {
   freelance: 'Freelance / Indépendant',
@@ -54,11 +55,15 @@ const STYLE_LABELS = {
   expert: 'Expert'
 }
 
+const AGENT_NAME_REGEX = /^[a-zA-Z0-9_-]*$/
+const MIN_LENGTH = 3
+const MAX_LENGTH = 25
+
 export function StepConfirmation() {
   const { data, setAgentName, prevStep, reset, isCompanionAgent, isTaskAgent } = useOnboardingStore()
   const router = useRouter()
 
-  const [agentName, setAgentNameLocal] = useState(data.agentName || `Assistant ${data.sectorName}`)
+  const [agentName, setAgentNameLocal] = useState(data.agentName || `Assistant${data.sectorName ? data.sectorName.replace(/\s+/g, '') : ''}`.slice(0, MAX_LENGTH))
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,8 +72,13 @@ export function StepConfirmation() {
   const isCompanion = isCompanionAgent()
   const isTask = isTaskAgent()
 
+  // Validate agent name
+  const isValidAgentName = agentName.length >= MIN_LENGTH &&
+                           agentName.length <= MAX_LENGTH &&
+                           AGENT_NAME_REGEX.test(agentName)
+
   const handleCreateAgent = async () => {
-    if (!agentName.trim()) return
+    if (!isValidAgentName) return
 
     setIsCreating(true)
     setError(null)
@@ -102,10 +112,8 @@ export function StepConfirmation() {
           system_prompt: systemPrompt,
           model: data.selectedLLM || 'claude',
           agent_type: data.agentType || 'companion',
-          settings: {
-            sectorSlug: data.sectorSlug,
-            sectorName: data.sectorName,
-            agentType: data.agentType,
+          business_profile: {
+            profileId: data.profileId,
             businessName: data.businessName,
             businessType: data.businessType,
             location: data.location,
@@ -118,6 +126,11 @@ export function StepConfirmation() {
             primaryGoals: data.primaryGoals,
             businessValues: data.businessValues,
             exampleProjects: data.exampleProjects,
+          },
+          settings: {
+            sectorSlug: data.sectorSlug,
+            sectorName: data.sectorName,
+            agentType: data.agentType,
             taskDescription: data.taskDescription,
             taskSpecificGoal: data.taskSpecificGoal,
             communicationStyle: data.communicationStyle,
@@ -336,21 +349,23 @@ export function StepConfirmation() {
       </Card>
 
       {/* Agent Name Input */}
-      <div className="space-y-2">
-        <Label htmlFor="agentName" className="text-base font-semibold">
-          Nom de votre assistant
-        </Label>
-        <Input
-          id="agentName"
-          value={agentName}
-          onChange={(e) => setAgentNameLocal(e.target.value)}
-          placeholder="Ex: Assistant Événementiel"
-          className="text-lg"
-        />
-        <p className="text-xs text-slate-500">
-          Vous pourrez le modifier plus tard dans les paramètres
-        </p>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="font-semibold text-lg text-slate-900 mb-4">
+            Personnalisation finale
+          </h3>
+          <AgentNameInput
+            value={agentName}
+            onChange={setAgentNameLocal}
+            agentType={data.agentType as 'companion' | 'task'}
+            sectorName={data.sectorName}
+            description={isTask ? data.taskDescription : data.businessName}
+          />
+          <p className="text-xs text-slate-500 mt-4">
+            💡 Vous pourrez le modifier plus tard dans les paramètres de l'agent
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Error Message */}
       {error && (
@@ -372,7 +387,7 @@ export function StepConfirmation() {
         </Button>
         <Button
           onClick={handleCreateAgent}
-          disabled={!agentName.trim() || isCreating}
+          disabled={!isValidAgentName || isCreating}
           className="flex-1"
         >
           {isCreating ? (

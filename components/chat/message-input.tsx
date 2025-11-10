@@ -9,11 +9,16 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, Paperclip, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { FileUploader } from '@/components/chat/file-uploader'
+import { MessageAttachment } from '@/components/chat/message-attachment'
+import type { ConversationAttachment } from '@/types/database'
 
 export function MessageInput() {
   const [message, setMessage] = useState('')
+  const [showUploader, setShowUploader] = useState(false)
+  const [pendingAttachments, setPendingAttachments] = useState<(ConversationAttachment & { signed_url?: string; thumbnail_url?: string })[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { isLoading, selectedConversationId, addMessage } = useChatStore()
 
@@ -26,8 +31,17 @@ export function MessageInput() {
     }
   }, [message])
 
+  const handleUploadComplete = (attachment: ConversationAttachment & { signed_url?: string; thumbnail_url?: string }) => {
+    setPendingAttachments(prev => [...prev, attachment])
+    setShowUploader(false)
+  }
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    setPendingAttachments(prev => prev.filter(a => a.id !== attachmentId))
+  }
+
   const handleSubmit = async () => {
-    if (!message.trim() || isLoading) return
+    if ((!message.trim() && pendingAttachments.length === 0) || isLoading) return
 
     const { selectedAgentId, selectedConversationId: currentConvId, setLoading, setError, createConversation, selectConversation } = useChatStore.getState()
 
@@ -87,6 +101,7 @@ export function MessageInput() {
     // Clear input
     const messageContent = message.trim()
     setMessage('')
+    setPendingAttachments([])
 
     // Set loading state
     setLoading(true)
@@ -103,6 +118,7 @@ export function MessageInput() {
           message: messageContent,
           agentId: selectedAgentId,
           conversationId: conversationId,
+          attachmentIds: pendingAttachments.map(a => a.id),
         }),
       })
 
@@ -184,6 +200,26 @@ export function MessageInput() {
 
   return (
     <div className="space-y-3">
+      {/* Pending Attachments Preview */}
+      {pendingAttachments.length > 0 && (
+        <div className="flex gap-2 flex-wrap p-3 bg-slate-50 rounded-lg border border-slate-200">
+          {pendingAttachments.map(attachment => (
+            <div key={attachment.id} className="relative group">
+              <MessageAttachment
+                attachment={attachment}
+                className="w-24 h-24"
+              />
+              <button
+                onClick={() => handleRemoveAttachment(attachment.id)}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-end gap-3">
         <div className="relative flex-1">
           <Textarea
@@ -207,9 +243,25 @@ export function MessageInput() {
           )}
         </div>
 
+        {/* Paperclip Button */}
+        <Button
+          onClick={() => setShowUploader(true)}
+          disabled={isLoading || !selectedConversationId}
+          size="icon"
+          variant="outline"
+          className={cn(
+            'h-[56px] w-[56px] rounded-2xl shadow-sm',
+            'hover:shadow-md transition-all',
+            'disabled:opacity-50 disabled:cursor-not-allowed'
+          )}
+        >
+          <Paperclip className="h-5 w-5" />
+        </Button>
+
+        {/* Send Button */}
         <Button
           onClick={handleSubmit}
-          disabled={!message.trim() || isLoading}
+          disabled={(!message.trim() && pendingAttachments.length === 0) || isLoading}
           size="icon"
           className={cn(
             'h-[56px] w-[56px] rounded-2xl shadow-md',
@@ -239,6 +291,19 @@ export function MessageInput() {
           <span>nouvelle ligne</span>
         </div>
       </div>
+
+      {/* File Uploader Modal */}
+      {showUploader && selectedConversationId && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="max-w-lg w-full">
+            <FileUploader
+              conversationId={selectedConversationId}
+              onUploadComplete={handleUploadComplete}
+              onClose={() => setShowUploader(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -22,6 +22,10 @@ export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentC
   // Get first letter of name for avatar
   const avatarText = agent.name[0] || '🤖'
 
+  // Get agent type from settings (fallback for PostgREST cache issues)
+  const agentType = (agent.settings as any)?.agentType || agent.agent_type || 'companion'
+  const agentModel = agent.model || 'claude'
+
   return (
     <button
       onClick={onClick}
@@ -47,16 +51,41 @@ export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentC
         </Avatar>
 
         {/* Agent info - avec contrôle strict de la largeur */}
-        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
-          <span className={cn(
-            'truncate font-medium text-[11px] block max-w-full',
-            isActive && 'text-primary-700'
-          )}>
-            {agent.name}
-          </span>
-          {isActive && (
-            <div className="h-1 w-1 rounded-full bg-primary-500 animate-pulse shrink-0" />
-          )}
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex items-center gap-1 mb-0.5">
+            <span className={cn(
+              'truncate font-medium text-[11px] block',
+              isActive && 'text-primary-700'
+            )}>
+              {agent.name}
+            </span>
+            {isActive && (
+              <div className="h-1 w-1 rounded-full bg-primary-500 animate-pulse shrink-0" />
+            )}
+          </div>
+
+          {/* Badges discrets */}
+          <div className="flex items-center gap-1">
+            {/* Agent Type Badge */}
+            <span className={cn(
+              "px-1 py-0 text-[8px] font-semibold rounded",
+              agentType === 'companion'
+                ? "bg-amber-100/80 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                : "bg-purple-100/80 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+            )}>
+              {agentType === 'companion' ? 'COMP' : 'TASK'}
+            </span>
+
+            {/* LLM Badge */}
+            <span className={cn(
+              "px-1 py-0 text-[8px] font-semibold rounded",
+              agentModel === 'claude'
+                ? "bg-orange-100/80 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                : "bg-green-100/80 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+            )}>
+              {agentModel === 'claude' ? 'CLA' : 'GPT'}
+            </span>
+          </div>
         </div>
 
         {/* Active indicator */}

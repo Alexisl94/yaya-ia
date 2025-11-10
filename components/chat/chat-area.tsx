@@ -12,6 +12,7 @@ import { Settings2, Plus, MessageSquare } from 'lucide-react'
 import { MessageBubble } from './message-bubble'
 import { MessageInput } from './message-input'
 import { TypingIndicator } from './loading-states'
+import { AgentNameInput } from './agent-name-input'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import {
@@ -20,8 +21,24 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog'
-import { ClientOnly } from '@/components/client-only'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+
+const AGENT_NAME_REGEX = /^[a-zA-Z0-9_-]*$/
+const MIN_NAME_LENGTH = 3
+const MAX_NAME_LENGTH = 25
 
 export function ChatArea() {
   const {
@@ -32,13 +49,110 @@ export function ChatArea() {
     getAgentConversations,
     selectConversation,
     createConversation,
+    updateAgent,
+    deleteAgent,
   } = useChatStore()
 
   const [agentSettingsOpen, setAgentSettingsOpen] = useState(false)
+  const [editedAgent, setEditedAgent] = useState<{
+    name: string
+    description: string
+    system_prompt: string
+    model: 'claude' | 'gpt'
+    agent_type: 'companion' | 'task'
+    temperature: number
+    max_tokens: number
+  } | null>(null)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
   const agent = getCurrentAgent()
   const messages = getCurrentMessages()
   const conversations = selectedAgentId ? getAgentConversations(selectedAgentId) : []
+
+  // Get agent type from settings (fallback for PostgREST cache issues)
+  const agentType = agent ? ((agent.settings as any)?.agentType || agent.agent_type || 'companion') : 'companion'
+  const agentModel = agent?.model || 'claude'
+
+  // Initialize edited agent when opening settings
+  const handleOpenSettings = () => {
+    if (agent) {
+      setEditedAgent({
+        name: agent.name,
+        description: agent.description || '',
+        system_prompt: agent.system_prompt,
+        model: agent.model,
+        agent_type: agentType as 'companion' | 'task',
+        temperature: agent.temperature,
+        max_tokens: agent.max_tokens,
+      })
+    }
+    setAgentSettingsOpen(true)
+  }
+
+  const handleSaveAgent = async () => {
+    if (!selectedAgentId || !editedAgent) return
+
+    // Validate agent name
+    const isValidName = editedAgent.name.length >= MIN_NAME_LENGTH &&
+                       editedAgent.name.length <= MAX_NAME_LENGTH &&
+                       AGENT_NAME_REGEX.test(editedAgent.name)
+
+    if (!isValidName) {
+      toast.error('Le nom de l\'agent doit contenir entre 3 et 25 caractères (lettres, chiffres, - et _ uniquement)')
+      return
+    }
+
+    try {
+      // Update agent via API
+      const response = await fetch(`/api/agents/${selectedAgentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedAgent),
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la mise à jour')
+      }
+
+      // Update local store
+      updateAgent(selectedAgentId, editedAgent)
+      toast.success('Agent mis à jour avec succès')
+      setAgentSettingsOpen(false)
+    } catch (error) {
+      console.error('Error updating agent:', error)
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la mise à jour')
+    }
+  }
+
+  const handleDeleteAgent = async () => {
+    if (!selectedAgentId) return
+
+    try {
+      // Delete agent via API
+      const response = await fetch(`/api/agents/${selectedAgentId}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la suppression')
+      }
+
+      // Update local store
+      deleteAgent(selectedAgentId)
+      toast.success('Agent supprimé avec succès')
+      setAgentSettingsOpen(false)
+      setIsDeleteConfirmOpen(false)
+    } catch (error) {
+      console.error('Error deleting agent:', error)
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression')
+    }
+  }
 
   // No agent selected
   if (!selectedAgentId || !agent) {
@@ -88,20 +202,20 @@ export function ChatArea() {
               {/* Agent Type Badge */}
               <span className={cn(
                 "px-2 py-0.5 text-[10px] font-semibold rounded-full",
-                agent.agent_type === 'companion'
+                agentType === 'companion'
                   ? "bg-amber-100 text-amber-700 border border-amber-300"
                   : "bg-purple-100 text-purple-700 border border-purple-300"
               )}>
-                {agent.agent_type === 'companion' ? '✨ COMPAGNON' : '🎯 TÂCHE'}
+                {agentType === 'companion' ? '✨ COMPAGNON' : '🎯 TÂCHE'}
               </span>
               {/* LLM Badge */}
               <span className={cn(
                 "px-2 py-0.5 text-[10px] font-semibold rounded-full",
-                agent.model === 'claude'
+                agentModel === 'claude'
                   ? "bg-orange-100 text-orange-700 border border-orange-300"
                   : "bg-green-100 text-green-700 border border-green-300"
               )}>
-                {agent.model === 'claude' ? 'CLAUDE' : 'GPT'}
+                {agentModel === 'claude' ? 'CLAUDE' : 'GPT'}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -113,7 +227,7 @@ export function ChatArea() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setAgentSettingsOpen(true)}
+          onClick={handleOpenSettings}
           title="Paramètres de l'agent"
         >
           <Settings2 className="h-5 w-5" />
@@ -216,49 +330,197 @@ export function ChatArea() {
       )}
 
       {/* Agent Settings Dialog */}
-      <ClientOnly>
-        <Dialog open={agentSettingsOpen} onOpenChange={setAgentSettingsOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Paramètres de l'agent : {agent?.name}</DialogTitle>
-              <DialogDescription>
-                Consultez et modifiez les paramètres de votre agent
-              </DialogDescription>
-            </DialogHeader>
+      <Dialog open={agentSettingsOpen} onOpenChange={setAgentSettingsOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Paramètres de l'agent</DialogTitle>
+            <DialogDescription>
+              Modifiez les paramètres de votre agent et sauvegardez les modifications
+            </DialogDescription>
+          </DialogHeader>
+
+          {editedAgent && (
             <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Informations</h3>
-                <div className="rounded-lg border p-4 space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Nom</p>
-                    <p className="text-sm font-medium">{agent?.name}</p>
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Informations de base</h3>
+
+                <AgentNameInput
+                  value={editedAgent.name}
+                  onChange={(name) => setEditedAgent({ ...editedAgent, name })}
+                  agentType={editedAgent.agent_type}
+                  sectorName={agent?.sector?.name}
+                  description={editedAgent.description}
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="agent-description">Description</Label>
+                  <Textarea
+                    id="agent-description"
+                    value={editedAgent.description}
+                    onChange={(e) => setEditedAgent({ ...editedAgent, description: e.target.value })}
+                    placeholder="Décrivez brièvement le rôle de cet agent..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Model Configuration */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Configuration du modèle</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-model">Modèle IA</Label>
+                    <Select
+                      value={editedAgent.model}
+                      onValueChange={(value) => setEditedAgent({ ...editedAgent, model: value as 'claude' | 'gpt' })}
+                    >
+                      <SelectTrigger id="agent-model">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="claude">Claude (Anthropic)</SelectItem>
+                        <SelectItem value="gpt">GPT (OpenAI)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Description</p>
-                    <p className="text-sm">{agent?.description || 'Aucune description'}</p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-type">Type d'agent</Label>
+                    <Select
+                      value={editedAgent.agent_type}
+                      onValueChange={(value) => setEditedAgent({ ...editedAgent, agent_type: value as 'companion' | 'task' })}
+                    >
+                      <SelectTrigger id="agent-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="companion">Compagnon</SelectItem>
+                        <SelectItem value="task">Tâche</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Modèle</p>
-                    <p className="text-sm">{agent?.model || 'Non défini'}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-temperature">
+                      Température
+                      <span className="ml-2 text-xs text-muted-foreground">({editedAgent.temperature})</span>
+                    </Label>
+                    <Input
+                      id="agent-temperature"
+                      type="number"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value={editedAgent.temperature}
+                      onChange={(e) => setEditedAgent({ ...editedAgent, temperature: parseFloat(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">0 = précis, 2 = créatif</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Secteur</p>
-                    <p className="text-sm">{agent?.sector?.name || 'Non défini'}</p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-max-tokens">Tokens maximum</Label>
+                    <Input
+                      id="agent-max-tokens"
+                      type="number"
+                      min="100"
+                      max="100000"
+                      step="100"
+                      value={editedAgent.max_tokens}
+                      onChange={(e) => setEditedAgent({ ...editedAgent, max_tokens: parseInt(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">Longueur max des réponses</p>
                   </div>
                 </div>
               </div>
+
+              {/* System Prompt */}
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">Instructions système</h3>
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {agent?.system_prompt || 'Aucune instruction système définie'}
-                  </p>
+                <Label htmlFor="agent-prompt">Prompt système</Label>
+                <Textarea
+                  id="agent-prompt"
+                  value={editedAgent.system_prompt}
+                  onChange={(e) => setEditedAgent({ ...editedAgent, system_prompt: e.target.value })}
+                  placeholder="Instructions système pour l'agent..."
+                  rows={8}
+                  className="font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ces instructions définissent le comportement et la personnalité de l'agent
+                </p>
+              </div>
+
+              {/* Additional Info */}
+              <div className="rounded-lg border p-4 space-y-2 bg-muted/30">
+                <p className="text-xs font-medium">Informations additionnelles</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Secteur:</span>{' '}
+                    <span className="font-medium">{agent?.sector?.name || 'Non défini'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">ID:</span>{' '}
+                    <span className="font-mono font-medium">{agent?.id?.slice(0, 8)}...</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      </ClientOnly>
+          )}
+
+          <DialogFooter className="flex items-center justify-between">
+            <Button
+              variant="destructive"
+              onClick={() => setIsDeleteConfirmOpen(true)}
+              className="mr-auto"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Supprimer l'agent
+            </Button>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setAgentSettingsOpen(false)}
+              >
+                Annuler
+              </Button>
+              <Button onClick={handleSaveAgent}>
+                Enregistrer les modifications
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'agent "{agent?.name}" ? Cette action est irréversible.
+              Toutes les conversations associées seront également supprimées.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteConfirmOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAgent}
+            >
+              Supprimer définitivement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

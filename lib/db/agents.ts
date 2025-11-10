@@ -39,9 +39,8 @@ export async function createAgent(
   try {
     const supabase = await createClient()
 
-    // Direct INSERT without agent_type for now (will use DB default 'companion')
-    // TODO: Add agent_type back after forcing PostgREST schema cache reload
-    const { data, error } = await supabase
+    // First, insert without agent_type and business_profile_id to avoid PostgREST cache issues
+    const { data: insertedAgent, error: insertError } = await supabase
       .from('agents')
       .insert({
         user_id: input.user_id,
@@ -49,7 +48,6 @@ export async function createAgent(
         name: input.name,
         system_prompt: input.system_prompt,
         model: input.model || 'claude',
-        // agent_type: removed temporarily - uses DB default
         template_id: input.template_id || null,
         description: input.description || null,
         temperature: input.temperature || 0.7,
@@ -59,18 +57,54 @@ export async function createAgent(
       .select()
       .single()
 
-    if (error) {
+    if (insertError) {
       return {
         success: false,
         error: {
-          code: error.code || 'UNKNOWN_ERROR',
-          message: error.message,
-          details: error.details,
+          code: insertError.code || 'UNKNOWN_ERROR',
+          message: insertError.message,
+          details: insertError.details,
         },
       }
     }
 
-    return { success: true, data: data as Agent }
+    // Then, update with agent_type using a dedicated function to bypass cache
+    const agentType = input.agent_type || 'companion'
+    const { error: updateTypeError } = await supabase.rpc('update_agent_type', {
+      agent_id: insertedAgent.id,
+      new_agent_type: agentType
+    })
+
+    // If the function call fails, log but don't fail the creation
+    if (updateTypeError) {
+      console.warn('Could not set agent_type via function, will use default:', updateTypeError)
+    }
+
+    // Update business_profile_id if provided, using a function to bypass cache
+    if (input.business_profile_id) {
+      const { error: updateProfileError } = await supabase.rpc('update_agent_business_profile', {
+        agent_id: insertedAgent.id,
+        new_business_profile_id: input.business_profile_id
+      })
+
+      if (updateProfileError) {
+        console.warn('Could not set business_profile_id via function:', updateProfileError)
+      }
+    }
+
+    // Fetch the final agent with updated agent_type
+    const { data: finalAgent, error: fetchError } = await supabase
+      .from('agents')
+      .select()
+      .eq('id', insertedAgent.id)
+      .single()
+
+    if (fetchError || !finalAgent) {
+      // If fetch fails, return the inserted agent (might have default agent_type)
+      return { success: true, data: insertedAgent as Agent }
+    }
+
+    return { success: true, data: finalAgent as Agent }
   } catch (error) {
     return {
       success: false,
@@ -113,14 +147,14 @@ export async function getAgentById(
     if (options.includeSector) {
       query = supabase
         .from('agents')
-        .select('*, sector:sectors(*)')
+        .select('*, sector:sectors(*), business_profile:business_profiles(*)')
         .eq('id', agentId)
     }
 
     if (options.includeTemplate) {
       query = supabase
         .from('agents')
-        .select('*, sector:sectors(*), template:agent_templates(*)')
+        .select('*, sector:sectors(*), template:agent_templates(*), business_profile:business_profiles(*)')
         .eq('id', agentId)
     }
 
@@ -182,7 +216,7 @@ export async function getUserAgents(
     // Build query
     let query = supabase
       .from('agents')
-      .select('*, sector:sectors(*)', { count: 'exact' })
+      .select('*, sector:sectors(*), business_profile:business_profiles(*)', { count: 'exact' })
       .eq('user_id', userId)
 
     // Apply filters

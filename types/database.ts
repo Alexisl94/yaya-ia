@@ -60,10 +60,30 @@ export interface AgentTemplate {
   updated_at: string;
 }
 
+export interface BusinessProfile {
+  id: string;
+  user_id: string;
+  business_name: string;
+  business_type: 'freelance' | 'tpe' | 'pme' | null;
+  location: string | null;
+  years_experience: '0-2' | '3-5' | '6-10' | '10+' | null;
+  main_clients: string | null;
+  specificities: string | null;
+  typical_project_size: 'small' | 'medium' | 'large' | 'mixed' | null;
+  main_challenges: string | null;
+  tools_used: string | null;
+  primary_goals: string[];
+  business_values: string | null;
+  example_projects: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Agent {
   id: string;
   user_id: string;
   sector_id: string;
+  business_profile_id: string | null;
   template_id: string | null;
   name: string;
   description: string | null;
@@ -100,6 +120,27 @@ export interface Message {
   latency_ms: number | null;
   metadata: Record<string, unknown>;
   created_at: string;
+}
+
+export interface ConversationAttachment {
+  id: string;
+  conversation_id: string;
+  message_id: string | null;
+  user_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  extracted_text: string | null;
+  thumbnail_path: string | null;
+  metadata: {
+    width?: number;
+    height?: number;
+    page_count?: number;
+    [key: string]: unknown;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UsageLog {
@@ -154,6 +195,7 @@ export interface AgentWithRelations extends Agent {
   sector?: Sector;
   template?: AgentTemplate;
   user?: User;
+  business_profile?: BusinessProfile;
 }
 
 export interface ConversationWithRelations extends Conversation {
@@ -188,9 +230,41 @@ export interface UpdateUserInput {
   trial_ends_at?: string;
 }
 
+export interface CreateBusinessProfileInput {
+  user_id: string;
+  business_name: string;
+  business_type?: 'freelance' | 'tpe' | 'pme';
+  location?: string;
+  years_experience?: '0-2' | '3-5' | '6-10' | '10+';
+  main_clients?: string;
+  specificities?: string;
+  typical_project_size?: 'small' | 'medium' | 'large' | 'mixed';
+  main_challenges?: string;
+  tools_used?: string;
+  primary_goals?: string[];
+  business_values?: string;
+  example_projects?: string;
+}
+
+export interface UpdateBusinessProfileInput {
+  business_name?: string;
+  business_type?: 'freelance' | 'tpe' | 'pme';
+  location?: string;
+  years_experience?: '0-2' | '3-5' | '6-10' | '10+';
+  main_clients?: string;
+  specificities?: string;
+  typical_project_size?: 'small' | 'medium' | 'large' | 'mixed';
+  main_challenges?: string;
+  tools_used?: string;
+  primary_goals?: string[];
+  business_values?: string;
+  example_projects?: string;
+}
+
 export interface CreateAgentInput {
   user_id: string;
   sector_id: string;
+  business_profile_id?: string;
   template_id?: string;
   name: string;
   description?: string;
@@ -235,6 +309,25 @@ export interface CreateMessageInput {
   model_used?: string;
   tokens_used?: number;
   latency_ms?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreateAttachmentInput {
+  conversation_id: string;
+  message_id?: string;
+  user_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  extracted_text?: string;
+  thumbnail_path?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdateAttachmentInput {
+  extracted_text?: string;
+  thumbnail_path?: string;
   metadata?: Record<string, unknown>;
 }
 

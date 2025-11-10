@@ -7,17 +7,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendMessage } from '@/lib/llm/anthropic-client'
 import { generateConversationTitle } from '@/lib/llm/generate-title'
 import { createClient } from '@/lib/supabase/server'
+import { getAttachmentById } from '@/lib/db/attachments'
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages'
 
 export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json()
-    const { message, agentId, conversationId } = body
+    const { message, agentId, conversationId, attachmentIds = [] } = body
 
-    // Validate required fields
-    if (!message || !agentId || !conversationId) {
+    // Validate required fields (message can be empty if attachments are provided)
+    if ((!message && attachmentIds.length === 0) || !agentId || !conversationId) {
       return NextResponse.json(
-        { error: 'Missing required fields: message, agentId, conversationId' },
+        { error: 'Missing required fields: message (or attachments), agentId, conversationId' },
         { status: 400 }
       )
     }
@@ -95,16 +97,95 @@ export async function POST(request: NextRequest) {
       // Continue even if we can't fetch history
     }
 
-    // Build conversation history for Claude
-    const conversationHistory = (messages || []).map((msg) => ({
+    // Build conversation history for Claude (simple text messages)
+    const conversationHistory: MessageParam[] = (messages || []).map((msg) => ({
       role: msg.role as 'user' | 'assistant',
       content: msg.content,
     }))
 
-    // Add current user message
+    // Fetch attachments if provided
+    const attachments = []
+    if (attachmentIds.length > 0) {
+      for (const attachmentId of attachmentIds) {
+        const result = await getAttachmentById(attachmentId)
+        if (result.success && result.data) {
+          attachments.push(result.data)
+        }
+      }
+    }
+
+    // Build multimodal content for current user message
+    const userMessageContent: any[] = []
+
+    // Add PDF text first (as context)
+    const pdfAttachments = attachments.filter(a => a.file_type === 'application/pdf')
+    if (pdfAttachments.length > 0) {
+      const pdfContext = pdfAttachments
+        .map(pdf => {
+          return `📄 Document PDF: ${pdf.file_name}\n${pdf.metadata?.page_count ? `Pages: ${pdf.metadata.page_count}\n` : ''}---\n${pdf.extracted_text || '[Contenu non disponible]'}\n---`
+        })
+        .join('\n\n')
+
+      // Prepend PDF context to the message
+      const textContent = pdfContext + '\n\n---\n\nQuestion de l\'utilisateur: ' + (message || 'Analysez le(s) document(s).')
+      userMessageContent.push({
+        type: 'text',
+        text: textContent
+      })
+    } else {
+      // No PDF, just add the message text
+      if (message) {
+        userMessageContent.push({
+          type: 'text',
+          text: message
+        })
+      }
+    }
+
+    // Add images (Vision API)
+    const imageAttachments = attachments.filter(a => a.file_type.startsWith('image/'))
+    for (const imageAttachment of imageAttachments) {
+      try {
+        // Download image from Storage
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from('conversation-attachments')
+          .download(imageAttachment.storage_path)
+
+        if (downloadError || !fileData) {
+          console.error('Error downloading image:', downloadError)
+          continue
+        }
+
+        // Convert to base64
+        const buffer = Buffer.from(await fileData.arrayBuffer())
+        const base64 = buffer.toString('base64')
+
+        // Add to Claude content
+        userMessageContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: imageAttachment.file_type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+            data: base64
+          }
+        })
+      } catch (error) {
+        console.error('Error processing image:', error)
+      }
+    }
+
+    // If no content was added but we have attachments, add a default message
+    if (userMessageContent.length === 0 && attachments.length > 0) {
+      userMessageContent.push({
+        type: 'text',
+        text: 'Analysez le(s) fichier(s) fourni(s).'
+      })
+    }
+
+    // Add current user message to conversation history
     conversationHistory.push({
       role: 'user',
-      content: message,
+      content: userMessageContent.length > 0 ? userMessageContent : message,
     })
 
     // Save user message to database
@@ -113,7 +194,7 @@ export async function POST(request: NextRequest) {
       .insert({
         conversation_id: finalConversationId,
         role: 'user',
-        content: message,
+        content: message || '[Fichier(s) envoyé(s)]',
         metadata: {},
       })
       .select()
@@ -121,6 +202,18 @@ export async function POST(request: NextRequest) {
 
     if (saveUserError) {
       console.error('Error saving user message:', saveUserError)
+    }
+
+    // Link attachments to the saved message
+    if (savedUserMessage && attachmentIds.length > 0) {
+      const { error: updateAttachmentsError } = await supabase
+        .from('conversation_attachments')
+        .update({ message_id: savedUserMessage.id })
+        .in('id', attachmentIds)
+
+      if (updateAttachmentsError) {
+        console.error('Error linking attachments to message:', updateAttachmentsError)
+      }
     }
 
     // Call Claude API

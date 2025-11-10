@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Copy, User, Bot, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MarkdownContent } from './markdown-content'
+import { MessageAttachment } from './message-attachment'
+import type { ConversationAttachment } from '@/types/database'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -19,10 +21,35 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false)
+  const [attachments, setAttachments] = useState<(ConversationAttachment & { signed_url?: string; thumbnail_url?: string })[]>([])
+  const [loadingAttachments, setLoadingAttachments] = useState(false)
 
   const isUser = message.role === 'user'
   const isAssistant = message.role === 'assistant'
   const isError = Boolean(message.metadata?.error)
+
+  // Fetch attachments for this message
+  useEffect(() => {
+    const fetchAttachments = async () => {
+      // Only fetch for user messages and if message has an ID (saved in DB)
+      if (isUser && message.id && !message.id.startsWith('msg-')) {
+        setLoadingAttachments(true)
+        try {
+          const response = await fetch(`/api/messages/${message.id}/attachments`)
+          const result = await response.json()
+          if (result.success && result.data) {
+            setAttachments(result.data)
+          }
+        } catch (error) {
+          console.error('Error fetching attachments:', error)
+        } finally {
+          setLoadingAttachments(false)
+        }
+      }
+    }
+
+    fetchAttachments()
+  }, [message.id, isUser])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content)
@@ -53,6 +80,22 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
       {/* Message content */}
       <div className={cn('flex-1 space-y-2', isUser && 'flex flex-col items-end')}>
+        {/* Attachments */}
+        {attachments.length > 0 && (
+          <div className={cn(
+            'flex flex-wrap gap-2 max-w-[85%]',
+            isUser && 'justify-end'
+          )}>
+            {attachments.map(attachment => (
+              <MessageAttachment
+                key={attachment.id}
+                attachment={attachment}
+                className="max-w-xs"
+              />
+            ))}
+          </div>
+        )}
+
         <div
           className={cn(
             'group relative max-w-[85%] rounded-2xl px-4 py-3 shadow-sm transition-all',
