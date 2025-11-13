@@ -279,6 +279,10 @@
   .animate-scale-in {
     animation: scaleIn 0.2s ease-out;
   }
+
+  .animate-bounce-slow {
+    animation: bounceSlow 2s ease-in-out infinite;
+  }
 }
 
 /* ==================== KEYFRAMES ==================== */
@@ -322,5 +326,14 @@
   to {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes bounceSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }

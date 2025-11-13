@@ -108,6 +108,31 @@ export function MessageInput() {
     setError(null)
 
     try {
+      // Get all attachments for this conversation (not just pending ones)
+      let allAttachmentIds = pendingAttachments.map(a => a.id)
+
+      // Fetch existing attachments from the conversation
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: existingAttachments } = await supabase
+          .from('conversation_attachments')
+          .select('id')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: false })
+          .limit(10) // Limit to last 10 attachments to avoid sending too much data
+
+        if (existingAttachments && existingAttachments.length > 0) {
+          // Add existing attachment IDs (avoid duplicates)
+          const existingIds = existingAttachments.map(a => a.id)
+          allAttachmentIds = Array.from(new Set([...existingIds, ...allAttachmentIds]))
+          console.log(`📎 Sending ${allAttachmentIds.length} attachments to AI (${existingIds.length} existing + ${pendingAttachments.length} new)`)
+        }
+      } catch (error) {
+        console.error('Failed to fetch existing attachments:', error)
+        // Continue with just pending attachments
+      }
+
       // Call chat API
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -118,7 +143,7 @@ export function MessageInput() {
           message: messageContent,
           agentId: selectedAgentId,
           conversationId: conversationId,
-          attachmentIds: pendingAttachments.map(a => a.id),
+          attachmentIds: allAttachmentIds,
         }),
       })
 

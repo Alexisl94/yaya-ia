@@ -133,8 +133,8 @@ export const useOnboardingStore = create<OnboardingStore>()(
             sectorName,
             sectorSlug,
             agentName: state.data.agentType === 'task'
-              ? `Agent ${sectorName}`
-              : `Assistant ${sectorName}`,
+              ? `${sectorName.split(' ')[0]}Bot`
+              : `Doggo${sectorName.replace(/\s+/g, '')}`,
           },
         })),
 

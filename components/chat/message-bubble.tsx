@@ -60,37 +60,37 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        'flex gap-3 animate-fade-in',
+        'flex gap-2.5 animate-fade-in group/message',
         isUser && 'flex-row-reverse'
       )}
     >
-      {/* Avatar */}
+      {/* Avatar - smaller and more subtle */}
       <Avatar className={cn(
-        'h-9 w-9 shrink-0 border-2',
-        isUser && 'border-primary-200 bg-primary-50',
-        isAssistant && 'border-secondary-200 bg-secondary-50'
+        'h-7 w-7 shrink-0 mt-0.5',
+        isUser && 'bg-gradient-to-br from-blue-500 to-blue-600',
+        isAssistant && 'bg-gradient-to-br from-slate-700 to-slate-800'
       )}>
         <AvatarFallback className={cn(
-          isUser && 'text-primary-600',
-          isAssistant && 'text-secondary-600'
+          'text-white',
+          isUser && 'bg-transparent',
+          isAssistant && 'bg-transparent'
         )}>
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+          {isUser ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
         </AvatarFallback>
       </Avatar>
 
       {/* Message content */}
-      <div className={cn('flex-1 space-y-2', isUser && 'flex flex-col items-end')}>
-        {/* Attachments */}
+      <div className={cn('flex-1 space-y-1 max-w-[75%]', isUser && 'flex flex-col items-end')}>
+        {/* Attachments - ultra compact */}
         {attachments.length > 0 && (
           <div className={cn(
-            'flex flex-wrap gap-2 max-w-[85%]',
+            'flex flex-wrap gap-1.5 mb-1',
             isUser && 'justify-end'
           )}>
             {attachments.map(attachment => (
               <MessageAttachment
                 key={attachment.id}
                 attachment={attachment}
-                className="max-w-xs"
               />
             ))}
           </div>
@@ -98,25 +98,24 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         <div
           className={cn(
-            'group relative max-w-[85%] rounded-2xl px-4 py-3 shadow-sm transition-all',
-            'hover:shadow-md',
-            isUser && 'bg-primary-500 text-primary-foreground',
-            isAssistant && !isError && 'bg-card border border-border',
-            isError && 'bg-danger-50 border border-danger-200'
+            'group relative rounded-xl px-3 py-2 transition-all',
+            isUser && 'bg-blue-600 text-white',
+            isAssistant && !isError && 'bg-slate-50/70 hover:bg-slate-50/90 border border-slate-200/50',
+            isError && 'bg-red-50 border border-red-200'
           )}
         >
-          {/* Message text - hide if loading (will show TypingIndicator instead) */}
+          {/* Message text */}
           {!message.isLoading && (
             <>
               {isAssistant && !isError ? (
-                // Render markdown for assistant messages
-                <MarkdownContent content={message.content} />
+                <div className="prose prose-sm max-w-none prose-slate prose-p:my-0.5 prose-p:leading-normal prose-p:text-[12.5px] prose-headings:my-1.5 prose-headings:text-sm prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0 prose-li:text-[12.5px]">
+                  <MarkdownContent content={message.content} />
+                </div>
               ) : (
-                // Plain text for user messages and errors
                 <div className={cn(
-                  'whitespace-pre-wrap break-words text-sm leading-relaxed',
+                  'whitespace-pre-wrap break-words text-[13px] leading-normal',
                   isUser && 'text-white',
-                  isError && 'text-danger-700'
+                  isError && 'text-red-700'
                 )}>
                   {message.content}
                 </div>
@@ -124,31 +123,31 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             </>
           )}
 
-          {/* Copy button */}
+          {/* Copy button - ultra minimal */}
           {!message.isLoading && isAssistant && !isError && (
             <Button
               variant="ghost"
               size="icon"
               onClick={handleCopy}
               className={cn(
-                'absolute -right-2 -top-2 h-7 w-7 opacity-0 transition-opacity',
-                'group-hover:opacity-100',
-                'bg-white hover:bg-slate-50 border border-border shadow-sm'
+                'absolute -right-1 -top-1 h-5 w-5 opacity-0 transition-opacity',
+                'group-hover/message:opacity-100',
+                'bg-white/90 hover:bg-white border border-slate-200/50 shadow-sm rounded-md'
               )}
             >
               {copied ? (
-                <Check className="h-3.5 w-3.5 text-success" />
+                <Check className="h-2.5 w-2.5 text-green-600" />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-2.5 w-2.5 text-slate-400" />
               )}
             </Button>
           )}
         </div>
 
-        {/* Metadata */}
+        {/* Metadata - more subtle and compact */}
         <div
           className={cn(
-            'flex items-center gap-2 px-1 text-xs text-muted-foreground',
+            'flex items-center gap-1.5 px-1 text-[10px] text-slate-400',
             isUser && 'justify-end'
           )}
         >
@@ -160,18 +159,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </span>
           {message.tokens_used && (
             <>
-              <span className="text-muted-foreground/50">•</span>
-              <span className="text-muted-foreground/80">
-                {message.tokens_used} tokens
-              </span>
+              <span className="text-slate-300">•</span>
+              <span>{message.tokens_used} tokens</span>
             </>
           )}
           {message.latency_ms && (
             <>
-              <span className="text-muted-foreground/50">•</span>
-              <span className="text-muted-foreground/80">
-                {(message.latency_ms / 1000).toFixed(1)}s
-              </span>
+              <span className="text-slate-300">•</span>
+              <span>{(message.latency_ms / 1000).toFixed(1)}s</span>
             </>
           )}
         </div>

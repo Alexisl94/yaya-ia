@@ -9,6 +9,7 @@ import { ReactNode, useState } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Menu, Settings, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DoggoLogo } from '@/components/ui/doggo-logo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,12 +58,10 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-md">
-              <span className="text-xl">🤖</span>
-            </div>
+            <DoggoLogo size="md" />
             <div>
-              <h1 className="text-lg font-bold text-gradient-primary">yaya.ia</h1>
-              <p className="text-xs text-muted-foreground">Agents IA personnalisés</p>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Doggo</h1>
+              <p className="text-xs text-slate-500">Votre assistant IA</p>
             </div>
           </div>
         </div>

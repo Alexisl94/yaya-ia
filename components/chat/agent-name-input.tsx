@@ -69,89 +69,103 @@ export function AgentNameInput({
   const isValid = value.length >= MIN_LENGTH && value.length <= MAX_LENGTH && AGENT_NAME_REGEX.test(value)
   const remainingChars = MAX_LENGTH - value.length
 
-  // Générer des jeux de mots créatifs basés sur le nom de l'entreprise
+  // Extraire les mots importants d'une description
+  const extractKeyWords = (text: string, count: number = 2): string[] => {
+    if (!text) return []
+
+    // Mots à ignorer (stop words)
+    const stopWords = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'pour', 'et', 'ou', 'dans', 'sur', 'avec', 'mon', 'ma', 'mes', 'ce', 'cet', 'cette', 'ces', 'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'à', 'au', 'aux', 'qui', 'que', 'quoi']
+
+    // Nettoyer et split
+    const words = text
+      .toLowerCase()
+      .replace(/[^a-zàâäéèêëïîôùûüÿæœç\s]/gi, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !stopWords.includes(w))
+
+    // Prendre les premiers mots significatifs
+    return words.slice(0, count).map(w => w.charAt(0).toUpperCase() + w.slice(1))
+  }
+
+  // Générer des jeux de mots créatifs basés sur Doggo ou la tâche
   const generateCreativeSuggestions = () => {
     const newSuggestions: string[] = []
-    const businessName = description || sectorName || 'Business'
-    const cleanBusiness = cleanName(businessName)
+    const cleanSector = sectorName ? cleanName(sectorName) : ''
 
     if (agentType === 'companion') {
-      // JEUX DE MOTS pour agents compagnons
+      // JEUX DE MOTS pour agents compagnons - basés sur "Doggo"
 
-      // 1. Portmanteaux créatifs
-      const portmanteauWords = ['Bot', 'AI', 'Hub', 'Mate', 'Buddy', 'Pal', 'Guide', 'Genius']
-      portmanteauWords.forEach(word => {
-        const suggestion = createPortmanteau(cleanBusiness, word)
+      // 1. Doggo + Secteur
+      if (cleanSector) {
+        newSuggestions.push(cleanName('Doggo' + cleanSector))
+      }
+
+      // 2. Doggo + Rôle
+      const roles = ['Helper', 'Guide', 'Pro', 'Expert', 'Buddy', 'Mate', 'Assistant']
+      roles.forEach(role => {
+        const suggestion = cleanName('Doggo' + role)
         if (suggestion.length >= MIN_LENGTH && suggestion.length <= MAX_LENGTH) {
           newSuggestions.push(suggestion)
         }
       })
 
-      // 2. Préfixes + nom
-      const prefixes = ['My', 'The', 'Smart', 'Pro', 'Super', 'Magic']
+      // 3. Préfixes + Doggo
+      const prefixes = ['My', 'Smart', 'Super', 'The']
       prefixes.forEach(prefix => {
-        const suggestion = cleanName(prefix + cleanBusiness)
+        const suggestion = cleanName(prefix + 'Doggo')
         if (suggestion.length >= MIN_LENGTH && suggestion.length <= MAX_LENGTH) {
           newSuggestions.push(suggestion)
         }
       })
 
-      // 3. Nom + suffixes créatifs
-      const suffixes = ['AI', 'Bot', 'Hub', 'Pro', 'Guru', 'Wizard', 'Master', 'Expert']
-      suffixes.forEach(suffix => {
-        const suggestion = cleanName(cleanBusiness + suffix)
-        if (suggestion.length >= MIN_LENGTH && suggestion.length <= MAX_LENGTH) {
-          newSuggestions.push(suggestion)
-        }
-      })
+      // 4. Doggo + Secteur court
+      if (cleanSector && cleanSector.length > 5) {
+        const shortSector = cleanSector.slice(0, 5)
+        newSuggestions.push(cleanName('Doggo' + shortSector))
+      }
 
-      // 4. Initiales + mot
-      const initialsWords = ['AI', 'Bot', 'Hub', 'Pro', 'Genius']
-      initialsWords.forEach(word => {
-        const suggestion = createInitialsCombo(businessName, word)
-        if (suggestion.length >= MIN_LENGTH && suggestion.length <= MAX_LENGTH) {
-          newSuggestions.push(suggestion)
-        }
-      })
+      // 5. Variations compactes
+      newSuggestions.push(
+        'DoggoPro',
+        'DoggoAI',
+        'MyDoggo'
+      )
 
-      // 5. Variations avec chiffres stylés
-      if (cleanBusiness.length <= MAX_LENGTH - 2) {
+    } else {
+      // JEUX DE MOTS pour agents de tâche - basés sur la description
+
+      // Extraire 2 mots clés de la description
+      const keyWords = extractKeyWords(description || sectorName || '', 2)
+
+      if (keyWords.length >= 2) {
+        // 1. Mot1 + Mot2
+        newSuggestions.push(cleanName(keyWords[0] + keyWords[1]))
+
+        // 2. Mot1 + Bot
+        newSuggestions.push(cleanName(keyWords[0] + 'Bot'))
+
+        // 3. Mot2 + Auto
+        newSuggestions.push(cleanName(keyWords[1] + 'Auto'))
+
+        // 4. Mot1 + Task
+        newSuggestions.push(cleanName(keyWords[0] + 'Task'))
+      } else if (keyWords.length === 1) {
+        // Si on n'a qu'un mot, faire des variations
         newSuggestions.push(
-          cleanName(cleanBusiness + '2-0'),
-          cleanName(cleanBusiness + 'Pro'),
-          cleanName(cleanBusiness + 'AI')
+          cleanName(keyWords[0] + 'Bot'),
+          cleanName(keyWords[0] + 'Auto'),
+          cleanName(keyWords[0] + 'Task')
         )
       }
 
-    } else {
-      // JEUX DE MOTS pour agents de tâche
-
-      // 1. Action + Business portmanteau
-      const actionWords = ['Auto', 'Quick', 'Smart', 'Fast', 'Turbo']
-      actionWords.forEach(action => {
-        const suggestion = createPortmanteau(action, cleanBusiness)
-        if (suggestion.length >= MIN_LENGTH && suggestion.length <= MAX_LENGTH) {
-          newSuggestions.push(suggestion)
-        }
-      })
-
-      // 2. Business + Task suffixes
-      const taskSuffixes = ['Task', 'Bot', 'Auto', 'Flow', 'Exec', 'Run']
-      taskSuffixes.forEach(suffix => {
-        const suggestion = cleanName(cleanBusiness + suffix)
-        if (suggestion.length >= MIN_LENGTH && suggestion.length <= MAX_LENGTH) {
-          newSuggestions.push(suggestion)
-        }
-      })
-
-      // 3. Initiales + suffixe puissant
-      const powerWords = ['Bot', 'Task', 'Auto', 'Pro', 'Max']
-      powerWords.forEach(word => {
-        const suggestion = createInitialsCombo(businessName, word)
-        if (suggestion.length >= MIN_LENGTH && suggestion.length <= MAX_LENGTH) {
-          newSuggestions.push(suggestion)
-        }
-      })
+      // 5. Fallback avec le secteur
+      if (cleanSector) {
+        newSuggestions.push(
+          cleanName(cleanSector + 'Bot'),
+          cleanName(cleanSector + 'Task'),
+          cleanName(cleanSector + 'Auto')
+        )
+      }
     }
 
     // Filtrer les doublons et les suggestions invalides
@@ -288,9 +302,14 @@ export function AgentNameInput({
       <div className="text-xs text-muted-foreground space-y-1">
         <p>💡 <strong>Astuce :</strong></p>
         <ul className="list-disc list-inside space-y-0.5 ml-2">
-          <li>Cliquez sur ✨ pour générer automatiquement un jeu de mots créatif</li>
-          <li>Basé sur {description ? 'le nom de votre entreprise' : 'votre secteur d\'activité'}</li>
-          <li>Vous pouvez aussi choisir parmi les suggestions ou créer le vôtre</li>
+          <li>Cliquez sur ✨ pour générer automatiquement un nom pertinent</li>
+          <li>
+            {agentType === 'companion'
+              ? 'Jeux de mots basés sur "Doggo" pour votre compagnon IA'
+              : 'Basé sur les mots-clés de votre tâche pour rester précis'
+            }
+          </li>
+          <li>Vous pouvez choisir parmi les suggestions ou créer le vôtre</li>
         </ul>
       </div>
     </div>

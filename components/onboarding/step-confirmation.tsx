@@ -63,14 +63,20 @@ export function StepConfirmation() {
   const { data, setAgentName, prevStep, reset, isCompanionAgent, isTaskAgent } = useOnboardingStore()
   const router = useRouter()
 
-  const [agentName, setAgentNameLocal] = useState(data.agentName || `Assistant${data.sectorName ? data.sectorName.replace(/\s+/g, '') : ''}`.slice(0, MAX_LENGTH))
-  const [isCreating, setIsCreating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  // Get sector details
+  // Get sector details and agent type
   const sector = SECTORS.find(s => s.slug === data.sectorSlug)
   const isCompanion = isCompanionAgent()
   const isTask = isTaskAgent()
+
+  const [agentName, setAgentNameLocal] = useState(
+    data.agentName ||
+    (isTask
+      ? `${data.sectorName?.split(' ')[0] || 'Task'}Bot`
+      : `Doggo${data.sectorName?.replace(/\s+/g, '') || 'Pro'}`
+    ).slice(0, MAX_LENGTH)
+  )
+  const [isCreating, setIsCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Validate agent name
   const isValidAgentName = agentName.length >= MIN_LENGTH &&

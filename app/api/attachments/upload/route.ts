@@ -110,14 +110,13 @@ export async function POST(request: NextRequest) {
         thumbnailPath = thumbnailStoragePath
       }
     } else if (isPDF) {
-      // Extract text from PDF
-      try {
-        const pdfData = await extractPDFText(fileBuffer)
+      // Extract text from PDF (optional - continues if it fails)
+      const pdfData = await extractPDFText(fileBuffer)
+      if (pdfData) {
         extractedText = pdfData.text
         metadata.page_count = pdfData.pageCount
-      } catch (error) {
-        console.error('PDF text extraction failed:', error)
-        // Continue even if extraction fails
+      } else {
+        console.log('PDF text extraction not available - PDF will be uploaded without text extraction')
       }
     }
 
@@ -126,6 +125,7 @@ export async function POST(request: NextRequest) {
     const storagePath = `${user.id}/${conversationId}/${safeFilename}`
 
     // 7. Upload file to Supabase Storage
+    console.log('📤 Uploading file to storage:', storagePath)
     const supabase = await createClient()
     const { error: uploadError } = await supabase.storage
       .from('conversation-attachments')
@@ -135,14 +135,24 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError)
+      console.error('❌ Storage upload error:', uploadError)
       return NextResponse.json(
         { success: false, error: 'Failed to upload file to storage' },
         { status: 500 }
       )
     }
+    console.log('✅ File uploaded to storage successfully')
 
     // 8. Create attachment record in database
+    console.log('💾 Creating attachment record in database:', {
+      conversation_id: conversationId,
+      message_id: messageId || 'null',
+      user_id: user.id,
+      file_name: file.name,
+      file_type: file.type,
+      file_size: processedBuffer.length
+    })
+
     const attachmentResult = await createAttachment({
       conversation_id: conversationId,
       message_id: messageId || undefined,
@@ -157,6 +167,8 @@ export async function POST(request: NextRequest) {
     })
 
     if (!attachmentResult.success) {
+      console.error('❌ Failed to create attachment record:', attachmentResult.error)
+
       // Cleanup: delete uploaded file if DB insert fails
       await supabase.storage
         .from('conversation-attachments')
@@ -169,10 +181,11 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { success: false, error: 'Failed to create attachment record' },
+        { success: false, error: 'Failed to create attachment record', details: attachmentResult.error },
         { status: 500 }
       )
     }
+    console.log('✅ Attachment record created successfully')
 
     // 9. Generate signed URL for immediate access
     const { data: urlData } = await supabase.storage

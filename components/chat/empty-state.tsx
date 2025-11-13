@@ -116,10 +116,10 @@ export function NoAgentEmptyState({ onCreateAgent }: NoAgentEmptyStateProps) {
 
         <div className="space-y-2">
           <h3 className="text-xl font-semibold">
-            Bienvenue sur yaya.ia
+            Bienvenue sur Doggo
           </h3>
           <p className="text-muted-foreground text-sm">
-            Sélectionnez un agent dans la barre latérale pour commencer une conversation
+            Sélectionnez un agent dans la barre latérale pour commencer à discuter
           </p>
         </div>
 

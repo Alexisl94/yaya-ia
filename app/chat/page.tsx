@@ -8,8 +8,8 @@ import { redirect } from 'next/navigation'
 import { ChatPageClient } from './chat-page-client'
 
 export const metadata = {
-  title: 'Chat | yaya.ia',
-  description: 'Discutez avec vos assistants IA personnalisés',
+  title: 'Chat | Doggo',
+  description: 'Discutez avec Doggo, votre assistant IA personnel',
 }
 
 export default async function ChatPage() {

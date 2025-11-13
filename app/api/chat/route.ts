@@ -16,6 +16,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { message, agentId, conversationId, attachmentIds = [] } = body
 
+    console.log('🔍 Chat API received:', {
+      message: message ? `"${message.substring(0, 50)}..."` : '(empty)',
+      agentId,
+      conversationId,
+      attachmentIds,
+      attachmentCount: attachmentIds.length
+    })
+
     // Validate required fields (message can be empty if attachments are provided)
     if ((!message && attachmentIds.length === 0) || !agentId || !conversationId) {
       return NextResponse.json(
@@ -106,40 +114,78 @@ export async function POST(request: NextRequest) {
     // Fetch attachments if provided
     const attachments = []
     if (attachmentIds.length > 0) {
+      console.log(`📎 Fetching ${attachmentIds.length} attachments...`)
       for (const attachmentId of attachmentIds) {
         const result = await getAttachmentById(attachmentId)
         if (result.success && result.data) {
           attachments.push(result.data)
+          console.log(`✅ Fetched attachment: ${result.data.file_name}, extracted_text length: ${result.data.extracted_text?.length || 0}`)
+        } else {
+          console.error(`❌ Failed to fetch attachment ${attachmentId}:`, result.error)
         }
       }
+      console.log(`📎 Total attachments fetched: ${attachments.length}`)
     }
 
     // Build multimodal content for current user message
     const userMessageContent: any[] = []
 
-    // Add PDF text first (as context)
+    // Extract and add PDF text as context
     const pdfAttachments = attachments.filter(a => a.file_type === 'application/pdf')
-    if (pdfAttachments.length > 0) {
-      const pdfContext = pdfAttachments
-        .map(pdf => {
-          return `📄 Document PDF: ${pdf.file_name}\n${pdf.metadata?.page_count ? `Pages: ${pdf.metadata.page_count}\n` : ''}---\n${pdf.extracted_text || '[Contenu non disponible]'}\n---`
-        })
-        .join('\n\n')
+    let pdfContext = ''
 
-      // Prepend PDF context to the message
-      const textContent = pdfContext + '\n\n---\n\nQuestion de l\'utilisateur: ' + (message || 'Analysez le(s) document(s).')
+    if (pdfAttachments.length > 0) {
+      console.log(`📄 Processing ${pdfAttachments.length} PDF(s)...`)
+
+      for (const pdf of pdfAttachments) {
+        let pdfText = pdf.extracted_text || ''
+
+        // If no extracted text, download and extract now
+        if (!pdfText.trim()) {
+          try {
+            console.log(`📥 Downloading PDF for extraction: ${pdf.file_name}`)
+            const { data: fileData, error: downloadError } = await supabase.storage
+              .from('conversation-attachments')
+              .download(pdf.storage_path)
+
+            if (!downloadError && fileData) {
+              const buffer = Buffer.from(await fileData.arrayBuffer())
+
+              // Extract text using pdf2json
+              const { extractPDFText } = await import('@/lib/utils/file-processing')
+              const result = await extractPDFText(buffer)
+
+              if (result) {
+                pdfText = result.text
+                console.log(`✅ PDF extracted: ${pdfText.length} chars from ${result.pageCount} pages`)
+              } else {
+                pdfText = '[Extraction failed]'
+              }
+            }
+          } catch (error) {
+            console.error('❌ PDF extraction error:', error)
+            pdfText = '[Extraction error]'
+          }
+        }
+
+        pdfContext += `\n\n📄 **Document: ${pdf.file_name}**\n\n${pdfText}\n\n---\n`
+      }
+    }
+
+    // Build message content
+    if (pdfContext) {
+      // Add PDF context + user message
+      const fullText = `${pdfContext}\n\n**Question de l'utilisateur:** ${message || 'Analysez les documents fournis.'}`
       userMessageContent.push({
         type: 'text',
-        text: textContent
+        text: fullText
       })
-    } else {
-      // No PDF, just add the message text
-      if (message) {
-        userMessageContent.push({
-          type: 'text',
-          text: message
-        })
-      }
+    } else if (message && message.trim()) {
+      // Just user message
+      userMessageContent.push({
+        type: 'text',
+        text: message
+      })
     }
 
     // Add images (Vision API)

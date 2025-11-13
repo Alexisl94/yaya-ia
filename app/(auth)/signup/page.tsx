@@ -1,18 +1,22 @@
 import { AuthForm } from '@/components/auth/auth-form'
+import { DoggoLogo } from '@/components/ui/doggo-logo'
 
 export const metadata = {
-  title: 'Créer un compte | yaya.ia',
-  description: 'Créez votre compte yaya.ia et commencez à utiliser vos agents IA personnalisés',
+  title: 'Créer un compte | Doggo',
+  description: 'Créez votre compte Doggo et profitez de votre assistant IA personnel',
 }
 
 export default function SignupPage() {
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-b from-amber-50/30 to-orange-50/30">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">yaya.ia</h1>
+          <div className="flex justify-center mb-4">
+            <DoggoLogo size="lg" />
+          </div>
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Doggo</h1>
           <p className="text-slate-600">
-            Créez vos agents IA personnalisés en quelques clics
+            Créez votre compte et profitez de votre assistant IA
           </p>
         </div>
 

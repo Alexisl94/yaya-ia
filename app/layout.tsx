@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "yaya.ia - Agents IA personnalisés",
-  description: "Créez et gérez vos assistants IA personnalisés pour optimiser votre activité professionnelle",
+  title: "Doggo - Votre assistant IA personnel",
+  description: "Votre compagnon IA pour booster votre activité. Simple, efficace et toujours à vos côtés.",
 };
 
 export default function RootLayout({

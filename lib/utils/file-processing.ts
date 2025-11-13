@@ -7,24 +7,61 @@ import sharp from 'sharp'
 
 /**
  * Extracts text content from a PDF buffer
+ * Uses pdf2json which works reliably in Node.js/Next.js
  *
  * @param {Buffer} pdfBuffer - PDF file buffer
- * @returns {Promise<{ text: string; pageCount: number }>} Extracted text and page count
+ * @returns {Promise<{ text: string; pageCount: number } | null>} Extracted text and page count, or null if failed
  */
-export async function extractPDFText(pdfBuffer: Buffer): Promise<{ text: string; pageCount: number }> {
-  try {
-    // Dynamic import for pdf-parse (CommonJS module)
-    const pdf = (await import('pdf-parse')).default
-    const data = await pdf(pdfBuffer)
+export async function extractPDFText(pdfBuffer: Buffer): Promise<{ text: string; pageCount: number } | null> {
+  return new Promise((resolve) => {
+    try {
+      // @ts-ignore - pdf2json doesn't have perfect TypeScript types
+      const PDFParser = require('pdf2json')
+      const pdfParser = new PDFParser()
 
-    return {
-      text: data.text,
-      pageCount: data.numpages
+      let extractedText = ''
+      let pageCount = 0
+
+      pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+        try {
+          // Extract text from all pages
+          const pages = pdfData.Pages || []
+          pageCount = pages.length
+
+          pages.forEach((page: any) => {
+            const texts = page.Texts || []
+            texts.forEach((text: any) => {
+              const decoded = decodeURIComponent(text.R?.[0]?.T || '')
+              extractedText += decoded + ' '
+            })
+            extractedText += '\n\n' // Page break
+          })
+
+          console.log(`✅ PDF extraction successful: ${extractedText.length} chars, ${pageCount} pages`)
+
+          resolve({
+            text: extractedText.trim(),
+            pageCount
+          })
+        } catch (parseError) {
+          console.error('⚠️ PDF parsing failed:', parseError)
+          resolve(null)
+        }
+      })
+
+      pdfParser.on('pdfParser_dataError', (error: any) => {
+        console.error('⚠️ PDF extraction failed:', error)
+        resolve(null)
+      })
+
+      // Parse the PDF buffer
+      pdfParser.parseBuffer(pdfBuffer)
+
+    } catch (error) {
+      console.error('⚠️ PDF text extraction setup failed:', error)
+      resolve(null)
     }
-  } catch (error) {
-    console.error('Error extracting PDF text:', error)
-    throw new Error('Failed to extract text from PDF')
-  }
+  })
 }
 
 /**

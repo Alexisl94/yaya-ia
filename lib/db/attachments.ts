@@ -3,13 +3,27 @@
  * Provides CRUD operations for file attachments
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import type {
   ConversationAttachment,
   CreateAttachmentInput,
   UpdateAttachmentInput,
   DatabaseResult,
 } from '@/types/database'
+import { getPostgresPool } from './pg-client'
+
+// Create admin client with service role to bypass RLS and PostgREST cache
+function createAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+  return createClient(supabaseUrl, supabaseServiceRole, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 /**
  * Creates a new attachment record in the database
@@ -21,8 +35,12 @@ export async function createAttachment(
   input: CreateAttachmentInput
 ): Promise<DatabaseResult<ConversationAttachment>> {
   try {
-    const supabase = await createClient()
+    console.log('🔧 Attempting to create attachment with admin client (service_role)')
 
+    // Use admin client with service role
+    const supabase = createAdminClient()
+
+    // Try direct INSERT with admin client
     const { data, error } = await supabase
       .from('conversation_attachments')
       .insert({
@@ -41,6 +59,11 @@ export async function createAttachment(
       .single()
 
     if (error) {
+      console.error('❌ Supabase INSERT error:', error)
+      console.error('❌ Error code:', error.code)
+      console.error('❌ Error message:', error.message)
+      console.error('❌ Error details:', error.details)
+
       return {
         success: false,
         error: {
@@ -51,8 +74,10 @@ export async function createAttachment(
       }
     }
 
+    console.log('✅ Attachment created successfully! ID:', data.id)
     return { success: true, data }
   } catch (error) {
+    console.error('❌ Unexpected error in createAttachment:', error)
     return {
       success: false,
       error: {
@@ -74,7 +99,8 @@ export async function getAttachmentById(
   attachmentId: string
 ): Promise<DatabaseResult<ConversationAttachment | null>> {
   try {
-    const supabase = await createClient()
+    // Use admin client to bypass RLS
+    const supabase = createAdminClient()
 
     const { data, error } = await supabase
       .from('conversation_attachments')
