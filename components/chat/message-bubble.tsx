@@ -31,7 +31,13 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   // Fetch attachments for this message
   useEffect(() => {
     const fetchAttachments = async () => {
-      // Only fetch for user messages and if message has an ID (saved in DB)
+      // Check if attachments are already in metadata (from MessageInput)
+      if (message.metadata?.attachments && Array.isArray(message.metadata.attachments)) {
+        setAttachments(message.metadata.attachments as any[])
+        return
+      }
+
+      // Otherwise, fetch from API for saved messages
       if (isUser && message.id && !message.id.startsWith('msg-')) {
         setLoadingAttachments(true)
         try {
@@ -49,7 +55,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     }
 
     fetchAttachments()
-  }, [message.id, isUser])
+  }, [message.id, message.metadata, isUser])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content)
@@ -80,11 +86,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       </Avatar>
 
       {/* Message content */}
-      <div className={cn('flex-1 space-y-1 max-w-[75%]', isUser && 'flex flex-col items-end')}>
+      <div className={cn('flex-1 space-y-0 max-w-[75%]', isUser && 'flex flex-col items-end')}>
         {/* Attachments - ultra compact */}
         {attachments.length > 0 && (
           <div className={cn(
-            'flex flex-wrap gap-1.5 mb-1',
+            'flex flex-wrap gap-1 mb-0',
             isUser && 'justify-end'
           )}>
             {attachments.map(attachment => (
@@ -98,7 +104,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         <div
           className={cn(
-            'group relative rounded-xl px-3 py-2 transition-all',
+            'group relative rounded-xl px-3 py-1 transition-all',
             isUser && 'bg-blue-600 text-white',
             isAssistant && !isError && 'bg-slate-50/70 hover:bg-slate-50/90 border border-slate-200/50',
             isError && 'bg-red-50 border border-red-200'
@@ -108,7 +114,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           {!message.isLoading && (
             <>
               {isAssistant && !isError ? (
-                <div className="prose prose-sm max-w-none prose-slate prose-p:my-0.5 prose-p:leading-normal prose-p:text-[12.5px] prose-headings:my-1.5 prose-headings:text-sm prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0 prose-li:text-[12.5px]">
+                <div className="prose-compact" style={{ fontSize: '13px', lineHeight: '20px' }}>
                   <MarkdownContent content={message.content} />
                 </div>
               ) : (
@@ -147,7 +153,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {/* Metadata - more subtle and compact */}
         <div
           className={cn(
-            'flex items-center gap-1.5 px-1 text-[10px] text-slate-400',
+            'flex items-center gap-1 px-1 text-[10px] text-slate-400 mt-0.5',
             isUser && 'justify-end'
           )}
         >

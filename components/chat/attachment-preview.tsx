@@ -6,10 +6,11 @@
  */
 
 import { useState, useEffect } from 'react'
-import { X, Download, ZoomIn, ZoomOut, FileText } from 'lucide-react'
+import { X, Download, ZoomIn, ZoomOut, FileText, Globe, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { ConversationAttachment } from '@/types/database'
+import { MarkdownContent } from './markdown-content'
 
 interface AttachmentPreviewProps {
   attachment: ConversationAttachment & { signed_url?: string }
@@ -22,6 +23,7 @@ export function AttachmentPreview({ attachment, onClose }: AttachmentPreviewProp
 
   const isImage = attachment.file_type.startsWith('image/')
   const isPDF = attachment.file_type === 'application/pdf'
+  const isScrapedPage = attachment.file_type === 'text/plain' && attachment.metadata?.scraped === true
 
   useEffect(() => {
     // Prevent body scroll when preview is open
@@ -187,6 +189,59 @@ export function AttachmentPreview({ attachment, onClose }: AttachmentPreviewProp
                   <Download className="w-4 h-4 mr-2" />
                   Télécharger
                 </Button>
+              </div>
+            )}
+          </div>
+        ) : isScrapedPage ? (
+          <div className="max-w-4xl w-full bg-white rounded-lg p-8 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Globe className="w-8 h-8 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-lg mb-1">
+                  {attachment.metadata?.title || attachment.file_name}
+                </h4>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-slate-600">
+                    Page web scrapée • {formatFileSize(attachment.file_size)}
+                  </p>
+                  {attachment.metadata?.source_url && (
+                    <>
+                      <span className="text-slate-300">•</span>
+                      <a
+                        href={attachment.metadata.source_url as string}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                      >
+                        Voir la source
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </>
+                  )}
+                </div>
+                {attachment.metadata?.scraped_at && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Scrapé le {new Date(attachment.metadata.scraped_at as string).toLocaleDateString('fr-FR')}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {attachment.extracted_text && (
+              <div className="space-y-3">
+                <div className="prose prose-sm max-w-none bg-slate-50 rounded-lg p-6">
+                  <MarkdownContent content={attachment.extracted_text} />
+                </div>
+              </div>
+            )}
+
+            {!attachment.extracted_text && (
+              <div className="text-center py-8">
+                <p className="text-slate-600 mb-4">
+                  Aucun contenu disponible
+                </p>
               </div>
             )}
           </div>

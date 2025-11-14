@@ -9,15 +9,17 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Loader2, Paperclip, X } from 'lucide-react'
+import { Send, Loader2, Paperclip, X, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FileUploader } from '@/components/chat/file-uploader'
+import { WebScraper } from '@/components/chat/web-scraper'
 import { MessageAttachment } from '@/components/chat/message-attachment'
 import type { ConversationAttachment } from '@/types/database'
 
 export function MessageInput() {
   const [message, setMessage] = useState('')
   const [showUploader, setShowUploader] = useState(false)
+  const [showScraper, setShowScraper] = useState(false)
   const [pendingAttachments, setPendingAttachments] = useState<(ConversationAttachment & { signed_url?: string; thumbnail_url?: string })[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { isLoading, selectedConversationId, addMessage } = useChatStore()
@@ -34,6 +36,11 @@ export function MessageInput() {
   const handleUploadComplete = (attachment: ConversationAttachment & { signed_url?: string; thumbnail_url?: string }) => {
     setPendingAttachments(prev => [...prev, attachment])
     setShowUploader(false)
+  }
+
+  const handleScrapeComplete = (attachments: ConversationAttachment[]) => {
+    setPendingAttachments(prev => [...prev, ...attachments])
+    setShowScraper(false)
   }
 
   const handleRemoveAttachment = (attachmentId: string) => {
@@ -77,7 +84,9 @@ export function MessageInput() {
       model_used: null,
       tokens_used: null,
       latency_ms: null,
-      metadata: {},
+      metadata: {
+        attachments: pendingAttachments,
+      },
       created_at: new Date().toISOString(),
     }
 
@@ -227,18 +236,17 @@ export function MessageInput() {
     <div className="space-y-3">
       {/* Pending Attachments Preview */}
       {pendingAttachments.length > 0 && (
-        <div className="flex gap-2 flex-wrap p-3 bg-slate-50 rounded-lg border border-slate-200">
+        <div className="flex gap-1.5 flex-wrap px-2 py-1.5 bg-slate-50/50 rounded-lg border border-slate-200/60">
           {pendingAttachments.map(attachment => (
             <div key={attachment.id} className="relative group">
               <MessageAttachment
                 attachment={attachment}
-                className="w-24 h-24"
               />
               <button
                 onClick={() => handleRemoveAttachment(attachment.id)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center shadow-sm hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
               >
-                <X className="w-4 h-4" />
+                <X className="w-2.5 h-2.5" />
               </button>
             </div>
           ))}
@@ -283,6 +291,21 @@ export function MessageInput() {
           <Paperclip className="h-5 w-5" />
         </Button>
 
+        {/* Web Scraper Button */}
+        <Button
+          onClick={() => setShowScraper(true)}
+          disabled={isLoading || !selectedConversationId}
+          size="icon"
+          variant="outline"
+          className={cn(
+            'h-[56px] w-[56px] rounded-2xl shadow-sm',
+            'hover:shadow-md transition-all',
+            'disabled:opacity-50 disabled:cursor-not-allowed'
+          )}
+        >
+          <Globe className="h-5 w-5" />
+        </Button>
+
         {/* Send Button */}
         <Button
           onClick={handleSubmit}
@@ -325,6 +348,19 @@ export function MessageInput() {
               conversationId={selectedConversationId}
               onUploadComplete={handleUploadComplete}
               onClose={() => setShowUploader(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Web Scraper Modal */}
+      {showScraper && selectedConversationId && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="max-w-lg w-full">
+            <WebScraper
+              conversationId={selectedConversationId}
+              onScrapeComplete={handleScrapeComplete}
+              onClose={() => setShowScraper(false)}
             />
           </div>
         </div>

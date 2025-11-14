@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ChevronRight, Bot } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getModelInfo } from '@/lib/utils/model-utils'
 
 interface AgentCardProps {
   agent: Agent
@@ -24,7 +25,7 @@ export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentC
 
   // Get agent type from settings (fallback for PostgREST cache issues)
   const agentType = (agent.settings as any)?.agentType || agent.agent_type || 'companion'
-  const agentModel = agent.model || 'claude'
+  const modelInfo = getModelInfo(agent.model)
 
   return (
     <button
@@ -76,14 +77,16 @@ export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentC
               {agentType === 'companion' ? 'COMP' : 'TASK'}
             </span>
 
-            {/* LLM Badge */}
+            {/* Model Badge with Emoji */}
             <span className={cn(
-              "px-1 py-0 text-[8px] font-semibold rounded",
-              agentModel === 'claude'
-                ? "bg-orange-100/80 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                : "bg-green-100/80 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              "px-1 py-0 text-[8px] font-semibold rounded flex items-center gap-0.5",
+              modelInfo.tier === 'economy' && "bg-green-100/80 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+              modelInfo.tier === 'standard' && "bg-blue-100/80 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+              modelInfo.tier === 'premium' && "bg-purple-100/80 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+              modelInfo.tier === 'ultra' && "bg-orange-100/80 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
             )}>
-              {agentModel === 'claude' ? 'CLA' : 'GPT'}
+              <span className="text-[8px]">{modelInfo.emoji}</span>
+              {modelInfo.displayName.slice(0, 3).toUpperCase()}
             </span>
           </div>
         </div>

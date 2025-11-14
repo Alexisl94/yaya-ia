@@ -7,7 +7,7 @@
 
 import { ReactNode, useState } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
-import { Menu, Settings, User } from 'lucide-react'
+import { Menu, Settings, User, LayoutGrid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DoggoLogo } from '@/components/ui/doggo-logo'
 import {
@@ -27,6 +27,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ClientOnly } from '@/components/client-only'
+import Link from 'next/link'
 
 interface ChatLayoutProps {
   children: ReactNode
@@ -67,6 +68,17 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link href="/agents">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-accent"
+              title="Mes Agents"
+            >
+              <LayoutGrid className="h-5 w-5" />
+            </Button>
+          </Link>
+
           <Button
             variant="ghost"
             size="icon"
@@ -85,6 +97,10 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => router.push('/agents')}>
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  <span>Mes Agents</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/profile')}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profil</span>

@@ -20,10 +20,12 @@ import {
   Sparkles,
   Target,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Settings,
+  ArrowLeft
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { AgentWithRelations } from '@/types/database'
+import type { AgentWithRelations, ModelType } from '@/types/database'
 import {
   Dialog,
   DialogContent,
@@ -32,9 +34,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { getModelInfo, formatCostEUR, getCostBadgeColor } from '@/lib/utils/model-utils'
+import { ModelSettingsModal } from '@/components/agents/model-settings-modal'
 
 interface AgentsPageClientProps {
   userId: string
+}
+
+interface MonthlyBudget {
+  total_cost_usd: number
+  total_tokens: number
+  total_conversations: number
+  budget_limit_usd: number
+  budget_used_percent: number
 }
 
 export function AgentsPageClient({ userId }: AgentsPageClientProps) {
@@ -47,10 +59,14 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [agentToDelete, setAgentToDelete] = useState<AgentWithRelations | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null)
+  const [modelSettingsOpen, setModelSettingsOpen] = useState(false)
+  const [agentToOptimize, setAgentToOptimize] = useState<AgentWithRelations | null>(null)
 
-  // Fetch agents
+  // Fetch agents and budget
   useEffect(() => {
     fetchAgents()
+    fetchMonthlyBudget()
   }, [])
 
   const fetchAgents = async () => {
@@ -70,6 +86,19 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchMonthlyBudget = async () => {
+    try {
+      const response = await fetch('/api/budget/monthly')
+      const result = await response.json()
+
+      if (result.success) {
+        setMonthlyBudget(result.data)
+      }
+    } catch (err) {
+      console.error('Error fetching monthly budget:', err)
     }
   }
 
@@ -117,6 +146,42 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
     }
   }
 
+  // Handle optimize click
+  const handleOptimizeClick = (agent: AgentWithRelations) => {
+    setAgentToOptimize(agent)
+    setModelSettingsOpen(true)
+  }
+
+  // Handle model change
+  const handleModelChange = async (agentId: string, newModel: ModelType) => {
+    try {
+      const response = await fetch(`/api/agents/${agentId}/model`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ model: newModel })
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la mise à jour')
+      }
+
+      // Update the agent in the list
+      setAgents(prev => prev.map(a =>
+        a.id === agentId ? { ...a, model: newModel } : a
+      ))
+
+      // Refresh budget
+      await fetchMonthlyBudget()
+    } catch (err) {
+      console.error('Error updating model:', err)
+      throw err
+    }
+  }
+
   // Stats
   const stats = {
     total: agents.length,
@@ -130,11 +195,21 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
       <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Mes Agents</h1>
-              <p className="text-slate-600 mt-1">
-                Gérez et organisez vos assistants IA
-              </p>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/chat')}
+                title="Retour au chat"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Mes Agents</h1>
+                <p className="text-slate-600 mt-1">
+                  Gérez et organisez vos assistants IA
+                </p>
+              </div>
             </div>
             <Button
               onClick={() => router.push('/onboarding')}
@@ -148,6 +223,64 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Monthly Budget Bar */}
+        {monthlyBudget && monthlyBudget.total_cost_usd > 0 && (
+          <Card className="mb-6 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    Budget du mois
+                  </h3>
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-xs font-semibold",
+                    monthlyBudget.budget_used_percent < 50 && "bg-green-100 text-green-700",
+                    monthlyBudget.budget_used_percent >= 50 && monthlyBudget.budget_used_percent < 80 && "bg-yellow-100 text-yellow-700",
+                    monthlyBudget.budget_used_percent >= 80 && "bg-red-100 text-red-700"
+                  )}>
+                    {monthlyBudget.budget_used_percent.toFixed(0)}% utilisé
+                  </span>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-slate-900">
+                    {formatCostEUR(monthlyBudget.total_cost_usd)}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    sur {formatCostEUR(monthlyBudget.budget_limit_usd)} disponible
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full transition-all duration-500 rounded-full",
+                    monthlyBudget.budget_used_percent < 50 && "bg-gradient-to-r from-green-500 to-green-600",
+                    monthlyBudget.budget_used_percent >= 50 && monthlyBudget.budget_used_percent < 80 && "bg-gradient-to-r from-yellow-500 to-yellow-600",
+                    monthlyBudget.budget_used_percent >= 80 && "bg-gradient-to-r from-red-500 to-red-600"
+                  )}
+                  style={{ width: `${Math.min(monthlyBudget.budget_used_percent, 100)}%` }}
+                />
+              </div>
+
+              {/* Stats summary */}
+              <div className="flex items-center gap-4 mt-3 text-xs text-slate-600">
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{monthlyBudget.total_conversations} conversations</span>
+                </div>
+                {monthlyBudget.budget_used_percent >= 80 && (
+                  <div className="flex items-center gap-1 text-red-600 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>Attention : budget bientôt épuisé</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
@@ -316,11 +449,48 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
 
                   {/* Sector info */}
                   {agent.sector && (
-                    <div className="flex items-center gap-2 mb-4 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 mb-3 text-xs text-slate-500">
                       <span>{agent.sector.icon}</span>
                       <span>{agent.sector.name}</span>
                     </div>
                   )}
+
+                  {/* Model and Cost Info */}
+                  <div className="flex items-center justify-between mb-4 text-xs">
+                    {/* Model Badge */}
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 border border-slate-200">
+                      <span className="text-sm">{getModelInfo(agent.model).emoji}</span>
+                      <span className="font-medium text-slate-700">
+                        {getModelInfo(agent.model).displayName}
+                      </span>
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase",
+                        getModelInfo(agent.model).tier === 'economy' && "bg-green-100 text-green-700",
+                        getModelInfo(agent.model).tier === 'standard' && "bg-blue-100 text-blue-700",
+                        getModelInfo(agent.model).tier === 'premium' && "bg-purple-100 text-purple-700",
+                        getModelInfo(agent.model).tier === 'ultra' && "bg-orange-100 text-orange-700"
+                      )}>
+                        {getModelInfo(agent.model).tier}
+                      </span>
+                    </div>
+
+                    {/* Monthly Cost Badge - Always show, even if 0 */}
+                    <div className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded-md border",
+                      agent.total_cost_usd > 0
+                        ? (
+                          getCostBadgeColor(agent.total_cost_usd).color === 'green' && "bg-green-50 border-green-200 text-green-700" ||
+                          getCostBadgeColor(agent.total_cost_usd).color === 'yellow' && "bg-yellow-50 border-yellow-200 text-yellow-700" ||
+                          getCostBadgeColor(agent.total_cost_usd).color === 'red' && "bg-red-50 border-red-200 text-red-700"
+                        )
+                        : "bg-slate-50 border-slate-200 text-slate-600"
+                    )}>
+                      <span>{agent.total_cost_usd > 0 ? getCostBadgeColor(agent.total_cost_usd).emoji : '💰'}</span>
+                      <span className="font-semibold">
+                        {formatCostEUR(agent.total_cost_usd || 0)}/mois
+                      </span>
+                    </div>
+                  </div>
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-4 border-t">
@@ -332,6 +502,18 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
                     >
                       <MessageSquare className="w-4 h-4 mr-1" />
                       Discuter
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOptimizeClick(agent)
+                      }}
+                      className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                      title="Optimiser le modèle"
+                    >
+                      <Settings className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -390,6 +572,14 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Model Settings Modal */}
+      <ModelSettingsModal
+        agent={agentToOptimize}
+        open={modelSettingsOpen}
+        onOpenChange={setModelSettingsOpen}
+        onModelChange={handleModelChange}
+      />
     </div>
   )
 }

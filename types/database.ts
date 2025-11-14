@@ -9,7 +9,9 @@
 
 export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing';
-export type ModelType = 'claude' | 'gpt';
+export type ModelType = 'haiku' | 'gpt-4o-mini' | 'gpt-4o' | 'sonnet' | 'opus' | 'claude' | 'gpt';
+export type FunctionalType = 'creative' | 'analytical' | 'support' | 'code' | 'general';
+export type TaskMode = 'companion' | 'task';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type ConversationStatus = 'active' | 'archived' | 'deleted';
 export type EventType = 'message' | 'agent_created' | 'conversation_started';
@@ -89,11 +91,17 @@ export interface Agent {
   description: string | null;
   system_prompt: string;
   model: ModelType;
-  agent_type: 'companion' | 'task';
+  agent_type: TaskMode;
+  functional_type: FunctionalType; // Type fonctionnel pour recommandations
   temperature: number;
   max_tokens: number;
   is_active: boolean;
   settings: Record<string, unknown>;
+  // Nouveaux champs pour tracking
+  total_conversations: number;
+  total_tokens_used: number;
+  total_cost_usd: number;
+  last_used_at: string | null;
   created_at: string;
   updated_at: string;
 }

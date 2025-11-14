@@ -5,7 +5,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Sparkles, Zap, Shield, MessageSquare, TrendingUp, Clock } from "lucide-react"
+import { ArrowRight, Sparkles, Zap, Shield, MessageSquare, TrendingUp, Clock, Check } from "lucide-react"
 import { DoggoLogo } from "@/components/ui/doggo-logo"
 
 export default function Home() {
@@ -155,6 +155,160 @@ export default function Home() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="border-t py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              Des tarifs simples et transparents
+            </h2>
+            <p className="text-lg text-slate-600">
+              Commencez gratuitement, évoluez à votre rythme
+            </p>
+          </div>
+
+          <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-3">
+            {/* Free Plan */}
+            <div className="rounded-xl border-2 border-slate-200 bg-white p-8 shadow-sm hover:shadow-md transition-all">
+              <div className="mb-4">
+                <h3 className="text-2xl font-bold text-slate-900">Gratuit</h3>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-slate-900">0€</span>
+                  <span className="text-slate-600">/mois</span>
+                </div>
+              </div>
+              <p className="mb-6 text-slate-600">
+                Parfait pour découvrir Doggo
+              </p>
+              <ul className="mb-8 space-y-3">
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-green-600 mt-0.5" />
+                  <span className="text-slate-700">1 agent IA</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-green-600 mt-0.5" />
+                  <span className="text-slate-700">50 conversations/mois</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-green-600 mt-0.5" />
+                  <span className="text-slate-700">Modèles économiques (Haiku, Mini)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-green-600 mt-0.5" />
+                  <span className="text-slate-700">Support communautaire</span>
+                </li>
+              </ul>
+              <Link href="/signup" className="block">
+                <Button className="w-full" variant="outline">
+                  Commencer gratuitement
+                </Button>
+              </Link>
+            </div>
+
+            {/* Standard Plan */}
+            <div className="rounded-xl border-2 border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50 p-8 shadow-lg hover:shadow-xl transition-all relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                Populaire
+              </div>
+              <div className="mb-4">
+                <h3 className="text-2xl font-bold text-slate-900">Standard</h3>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-slate-900">10€</span>
+                  <span className="text-slate-600">/mois</span>
+                </div>
+              </div>
+              <p className="mb-6 text-slate-600">
+                Idéal pour les indépendants
+              </p>
+              <ul className="mb-8 space-y-3">
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <span className="text-slate-700 font-medium">3 agents IA</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <span className="text-slate-700 font-medium">300 conversations/mois</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <span className="text-slate-700 font-medium">Tous les modèles économiques</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <span className="text-slate-700 font-medium">20 requêtes GPT-4o/mois</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <span className="text-slate-700 font-medium">Support prioritaire</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <span className="text-slate-700 font-medium">Optimisation automatique</span>
+                </li>
+              </ul>
+              <Link href="/signup" className="block">
+                <Button className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
+                  Commencer maintenant
+                </Button>
+              </Link>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="rounded-xl border-2 border-slate-200 bg-white p-8 shadow-sm hover:shadow-md transition-all">
+              <div className="mb-4">
+                <h3 className="text-2xl font-bold text-slate-900">Pro</h3>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-slate-900">30€</span>
+                  <span className="text-slate-600">/mois</span>
+                </div>
+              </div>
+              <p className="mb-6 text-slate-600">
+                Pour les équipes et PME
+              </p>
+              <ul className="mb-8 space-y-3">
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <span className="text-slate-700">10 agents IA</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <span className="text-slate-700">800 conversations/mois</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <span className="text-slate-700">Tous les modèles disponibles</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <span className="text-slate-700">50 requêtes GPT-4o/mois</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <span className="text-slate-700">10 requêtes Opus/mois</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <span className="text-slate-700">Support premium 24/7</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <span className="text-slate-700">Analyses avancées</span>
+                </li>
+              </ul>
+              <Link href="/signup" className="block">
+                <Button className="w-full" variant="outline">
+                  Commencer
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <p className="text-center mt-8 text-sm text-slate-500">
+            Tous les tarifs sont HT • Résiliable à tout moment • Garantie satisfait ou remboursé 14 jours
+          </p>
         </div>
       </section>
 

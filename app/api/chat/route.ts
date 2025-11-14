@@ -130,52 +130,68 @@ export async function POST(request: NextRequest) {
     // Build multimodal content for current user message
     const userMessageContent: any[] = []
 
-    // Extract and add PDF text as context
-    const pdfAttachments = attachments.filter(a => a.file_type === 'application/pdf')
-    let pdfContext = ''
+    // Extract and add text documents (PDFs and scraped content) as context
+    const textDocuments = attachments.filter(a =>
+      a.file_type === 'application/pdf' || a.file_type === 'text/plain'
+    )
+    let documentContext = ''
 
-    if (pdfAttachments.length > 0) {
-      console.log(`📄 Processing ${pdfAttachments.length} PDF(s)...`)
+    if (textDocuments.length > 0) {
+      console.log(`📄 Processing ${textDocuments.length} text document(s)...`)
 
-      for (const pdf of pdfAttachments) {
-        let pdfText = pdf.extracted_text || ''
+      for (const doc of textDocuments) {
+        let docText = doc.extracted_text || ''
 
-        // If no extracted text, download and extract now
-        if (!pdfText.trim()) {
+        // If no extracted text, download and extract/read now
+        if (!docText.trim()) {
           try {
-            console.log(`📥 Downloading PDF for extraction: ${pdf.file_name}`)
+            console.log(`📥 Downloading document for extraction: ${doc.file_name}`)
             const { data: fileData, error: downloadError } = await supabase.storage
               .from('conversation-attachments')
-              .download(pdf.storage_path)
+              .download(doc.storage_path)
 
             if (!downloadError && fileData) {
               const buffer = Buffer.from(await fileData.arrayBuffer())
 
-              // Extract text using pdf2json
-              const { extractPDFText } = await import('@/lib/utils/file-processing')
-              const result = await extractPDFText(buffer)
+              if (doc.file_type === 'application/pdf') {
+                // Extract text from PDF using pdf2json
+                const { extractPDFText } = await import('@/lib/utils/file-processing')
+                const result = await extractPDFText(buffer)
 
-              if (result) {
-                pdfText = result.text
-                console.log(`✅ PDF extracted: ${pdfText.length} chars from ${result.pageCount} pages`)
-              } else {
-                pdfText = '[Extraction failed]'
+                if (result) {
+                  docText = result.text
+                  console.log(`✅ PDF extracted: ${docText.length} chars from ${result.pageCount} pages`)
+                } else {
+                  docText = '[Extraction failed]'
+                }
+              } else if (doc.file_type === 'text/plain') {
+                // Read text file directly
+                docText = buffer.toString('utf-8')
+                console.log(`✅ Text file read: ${docText.length} chars`)
               }
             }
           } catch (error) {
-            console.error('❌ PDF extraction error:', error)
-            pdfText = '[Extraction error]'
+            console.error('❌ Document extraction error:', error)
+            docText = '[Extraction error]'
           }
+        } else {
+          console.log(`✅ Using cached text: ${doc.file_name} (${docText.length} chars)`)
         }
 
-        pdfContext += `\n\n📄 **Document: ${pdf.file_name}**\n\n${pdfText}\n\n---\n`
+        // Add document icon based on type
+        const icon = doc.file_type === 'application/pdf' ? '📄' : '🌐'
+        const sourceInfo = doc.metadata?.source_url
+          ? `\n**Source:** ${doc.metadata.source_url}\n`
+          : ''
+
+        documentContext += `\n\n${icon} **Document: ${doc.file_name}**\n${sourceInfo}\n${docText}\n\n---\n`
       }
     }
 
     // Build message content
-    if (pdfContext) {
-      // Add PDF context + user message
-      const fullText = `${pdfContext}\n\n**Question de l'utilisateur:** ${message || 'Analysez les documents fournis.'}`
+    if (documentContext) {
+      // Add document context + user message
+      const fullText = `${documentContext}\n\n**Question de l'utilisateur:** ${message || 'Analysez les documents fournis.'}`
       userMessageContent.push({
         type: 'text',
         text: fullText
