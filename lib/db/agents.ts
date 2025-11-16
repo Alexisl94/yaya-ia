@@ -147,14 +147,14 @@ export async function getAgentById(
     if (options.includeSector) {
       query = supabase
         .from('agents')
-        .select('*, sector:sectors(*), business_profile:business_profiles(*)')
+        .select('*, sector:sectors(*)')
         .eq('id', agentId)
     }
 
     if (options.includeTemplate) {
       query = supabase
         .from('agents')
-        .select('*, sector:sectors(*), template:agent_templates(*), business_profile:business_profiles(*)')
+        .select('*, sector:sectors(*), template:agent_templates(*)')
         .eq('id', agentId)
     }
 
@@ -216,7 +216,7 @@ export async function getUserAgents(
     // Build query
     let query = supabase
       .from('agents')
-      .select('*, sector:sectors(*), business_profile:business_profiles(*)', { count: 'exact' })
+      .select('*, sector:sectors(*)', { count: 'exact' })
       .eq('user_id', userId)
 
     // Apply filters

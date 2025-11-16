@@ -150,6 +150,12 @@ export function ChatPageClient({ userId }: ChatPageClientProps) {
     async function loadMessages() {
       if (!selectedConversationId) return
 
+      // Skip loading if it's a temporary conversation (will be created by API)
+      if (selectedConversationId.startsWith('temp-conv-')) {
+        setMessages(selectedConversationId, [])
+        return
+      }
+
       try {
         const supabase = createClient()
 
@@ -160,7 +166,7 @@ export function ChatPageClient({ userId }: ChatPageClientProps) {
           .order('created_at', { ascending: true })
 
         if (messagesError) {
-          console.error('Error loading messages:', messagesError)
+          console.warn('Could not load messages (conversation may be new):', messagesError.message)
           // Initialize with empty array if error (conversation might be new)
           setMessages(selectedConversationId, [])
           return
@@ -169,7 +175,7 @@ export function ChatPageClient({ userId }: ChatPageClientProps) {
         // Set messages or empty array if none found
         setMessages(selectedConversationId, messages || [])
       } catch (error) {
-        console.error('Error loading messages:', error)
+        console.warn('Could not load messages:', error)
         // Initialize with empty array on error
         setMessages(selectedConversationId, [])
       }

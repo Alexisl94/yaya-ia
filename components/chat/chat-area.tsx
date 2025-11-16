@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/select'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { getAvailableModels, getModelById, formatCurrency } from '@/lib/pricing/model-pricing'
 
 const AGENT_NAME_REGEX = /^[a-zA-Z0-9_-]*$/
 const MIN_NAME_LENGTH = 3
@@ -58,7 +59,7 @@ export function ChatArea() {
     name: string
     description: string
     system_prompt: string
-    model: 'claude' | 'gpt'
+    model: string
     agent_type: 'companion' | 'task'
     temperature: number
     max_tokens: number
@@ -71,7 +72,8 @@ export function ChatArea() {
 
   // Get agent type from settings (fallback for PostgREST cache issues)
   const agentType = agent ? ((agent.settings as any)?.agentType || agent.agent_type || 'companion') : 'companion'
-  const agentModel = agent?.model || 'claude'
+  const agentModel = agent?.model || 'claude-3-haiku-20240307'
+  const modelConfig = getModelById(agentModel)
 
   // Initialize edited agent when opening settings
   const handleOpenSettings = () => {
@@ -211,11 +213,11 @@ export function ChatArea() {
               {/* LLM Badge */}
               <span className={cn(
                 "px-2 py-0.5 text-[10px] font-semibold rounded-full",
-                agentModel === 'claude'
+                modelConfig?.provider === 'anthropic'
                   ? "bg-orange-100 text-orange-700 border border-orange-300"
                   : "bg-green-100 text-green-700 border border-green-300"
               )}>
-                {agentModel === 'claude' ? 'CLAUDE' : 'GPT'}
+                {modelConfig?.displayName || agentModel}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -369,38 +371,55 @@ export function ChatArea() {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-foreground">Configuration du modèle</h3>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="agent-model">Modèle IA</Label>
-                    <Select
-                      value={editedAgent.model}
-                      onValueChange={(value) => setEditedAgent({ ...editedAgent, model: value as 'claude' | 'gpt' })}
-                    >
-                      <SelectTrigger id="agent-model">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="claude">Claude (Anthropic)</SelectItem>
-                        <SelectItem value="gpt">GPT (OpenAI)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agent-model">Modèle IA</Label>
+                  <Select
+                    value={editedAgent.model}
+                    onValueChange={(value) => setEditedAgent({ ...editedAgent, model: value })}
+                  >
+                    <SelectTrigger id="agent-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableModels().map((model) => {
+                        const pricing = formatCurrency(model.estimatedCostPer100Messages)
+                        return (
+                          <SelectItem key={model.id} value={model.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="font-medium">{model.displayName}</span>
+                              <span className="text-xs text-muted-foreground ml-4">
+                                {pricing} / ~100 msg
+                              </span>
+                            </div>
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {editedAgent.model && (() => {
+                    const selectedModel = getModelById(editedAgent.model)
+                    return selectedModel && (
+                      <p className="text-xs text-muted-foreground">
+                        {selectedModel.description} • {selectedModel.speed === 'fast' ? '⚡ Rapide' : selectedModel.speed === 'medium' ? '⚖️ Équilibré' : '🎯 Précis'}
+                      </p>
+                    )
+                  })()}
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="agent-type">Type d'agent</Label>
-                    <Select
-                      value={editedAgent.agent_type}
-                      onValueChange={(value) => setEditedAgent({ ...editedAgent, agent_type: value as 'companion' | 'task' })}
-                    >
-                      <SelectTrigger id="agent-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="companion">Compagnon</SelectItem>
-                        <SelectItem value="task">Tâche</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agent-type">Type d'agent</Label>
+                  <Select
+                    value={editedAgent.agent_type}
+                    onValueChange={(value) => setEditedAgent({ ...editedAgent, agent_type: value as 'companion' | 'task' })}
+                  >
+                    <SelectTrigger id="agent-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="companion">Compagnon</SelectItem>
+                      <SelectItem value="task">Tâche</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

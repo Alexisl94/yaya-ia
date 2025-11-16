@@ -50,65 +50,64 @@ export function MessageInput() {
   const handleSubmit = async () => {
     if ((!message.trim() && pendingAttachments.length === 0) || isLoading) return
 
-    const { selectedAgentId, selectedConversationId: currentConvId, setLoading, setError, createConversation, selectConversation } = useChatStore.getState()
+    const { selectedAgentId, selectedConversationId: currentConvId, setLoading, setError, selectConversation } = useChatStore.getState()
 
     if (!selectedAgentId) {
       setError('Aucun agent sélectionné')
       return
     }
 
-    // Create a new conversation if none is selected
-    let conversationId = currentConvId
-    if (!conversationId) {
-      const newConvId = `conv-${Date.now()}`
-      const newConversation = {
-        id: newConvId,
-        user_id: 'temp', // Will be created in backend
-        agent_id: selectedAgentId,
-        title: 'Nouvelle conversation',
-        summary: null,
-        status: 'active' as const,
+    console.log('💬 [SUBMIT] Starting handleSubmit with conversationId:', currentConvId || 'NULL')
+
+    // Check if current conversation ID is a temporary ID (created by UI button)
+    const isTemporaryId = currentConvId?.startsWith('conv-') || currentConvId?.startsWith('temp-conv-')
+
+    // Use current conversation ID only if it's a real UUID, otherwise treat as NULL
+    let conversationId = (currentConvId && !isTemporaryId) ? currentConvId : null
+    const isNewConversation = !conversationId || isTemporaryId
+
+    console.log('💬 [SUBMIT] isTemporaryId:', isTemporaryId)
+    console.log('💬 [SUBMIT] isNewConversation:', isNewConversation)
+    console.log('💬 [SUBMIT] Will send to API:', conversationId || 'NULL')
+
+    // Save message content before clearing
+    const messageContent = message.trim()
+
+    // For existing conversations, add optimistic UI updates
+    let loadingMessageId: string | null = null
+    if (!isNewConversation && conversationId) {
+      const userMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'user' as const,
+        content: messageContent,
+        model_used: null,
+        tokens_used: null,
+        latency_ms: null,
+        metadata: {
+          attachments: pendingAttachments,
+        },
+        created_at: new Date().toISOString(),
+      }
+
+      // Add user message
+      addMessage(conversationId, userMessage)
+
+      // Add temporary loading message for typing indicator
+      loadingMessageId = `msg-loading-${Date.now()}`
+      addMessage(conversationId, {
+        id: loadingMessageId,
+        role: 'assistant' as const,
+        content: '',
+        model_used: null,
+        tokens_used: null,
+        latency_ms: null,
         metadata: {},
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-      createConversation(selectedAgentId, newConversation)
-      selectConversation(newConvId)
-      conversationId = newConvId
+        isLoading: true,
+      })
     }
-
-    const userMessage = {
-      id: `msg-${Date.now()}`,
-      role: 'user' as const,
-      content: message.trim(),
-      model_used: null,
-      tokens_used: null,
-      latency_ms: null,
-      metadata: {
-        attachments: pendingAttachments,
-      },
-      created_at: new Date().toISOString(),
-    }
-
-    // Add user message
-    addMessage(conversationId, userMessage)
-
-    // Add temporary loading message for typing indicator
-    const loadingMessageId = `msg-loading-${Date.now()}`
-    addMessage(conversationId, {
-      id: loadingMessageId,
-      role: 'assistant' as const,
-      content: '',
-      model_used: null,
-      tokens_used: null,
-      latency_ms: null,
-      metadata: {},
-      created_at: new Date().toISOString(),
-      isLoading: true,
-    })
 
     // Clear input
-    const messageContent = message.trim()
     setMessage('')
     setPendingAttachments([])
 
@@ -120,27 +119,31 @@ export function MessageInput() {
       // Get all attachments for this conversation (not just pending ones)
       let allAttachmentIds = pendingAttachments.map(a => a.id)
 
-      // Fetch existing attachments from the conversation
-      try {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-        const { data: existingAttachments } = await supabase
-          .from('conversation_attachments')
-          .select('id')
-          .eq('conversation_id', conversationId)
-          .order('created_at', { ascending: false })
-          .limit(10) // Limit to last 10 attachments to avoid sending too much data
+      // Fetch existing attachments from the conversation (only if continuing existing conversation)
+      if (!isNewConversation && conversationId) {
+        try {
+          const { createClient } = await import('@/lib/supabase/client')
+          const supabase = createClient()
+          const { data: existingAttachments } = await supabase
+            .from('conversation_attachments')
+            .select('id')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: false })
+            .limit(10) // Limit to last 10 attachments to avoid sending too much data
 
-        if (existingAttachments && existingAttachments.length > 0) {
-          // Add existing attachment IDs (avoid duplicates)
-          const existingIds = existingAttachments.map(a => a.id)
-          allAttachmentIds = Array.from(new Set([...existingIds, ...allAttachmentIds]))
-          console.log(`📎 Sending ${allAttachmentIds.length} attachments to AI (${existingIds.length} existing + ${pendingAttachments.length} new)`)
+          if (existingAttachments && existingAttachments.length > 0) {
+            // Add existing attachment IDs (avoid duplicates)
+            const existingIds = existingAttachments.map(a => a.id)
+            allAttachmentIds = Array.from(new Set([...existingIds, ...allAttachmentIds]))
+            console.log(`📎 Sending ${allAttachmentIds.length} attachments to AI (${existingIds.length} existing + ${pendingAttachments.length} new)`)
+          }
+        } catch (error) {
+          console.error('Failed to fetch existing attachments:', error)
+          // Continue with just pending attachments
         }
-      } catch (error) {
-        console.error('Failed to fetch existing attachments:', error)
-        // Continue with just pending attachments
       }
+
+      console.log('💬 [API] Sending request with conversationId:', isNewConversation ? 'NULL' : conversationId)
 
       // Call chat API
       const response = await fetch('/api/chat', {
@@ -151,7 +154,7 @@ export function MessageInput() {
         body: JSON.stringify({
           message: messageContent,
           agentId: selectedAgentId,
-          conversationId: conversationId,
+          conversationId: isNewConversation ? null : conversationId,
           attachmentIds: allAttachmentIds,
         }),
       })
@@ -162,14 +165,71 @@ export function MessageInput() {
       }
 
       const data = await response.json()
+      console.log('💬 [API] Received response with conversationId:', data.conversationId)
 
-      // Remove loading message
-      const { deleteMessage } = useChatStore.getState()
-      deleteMessage(conversationId, loadingMessageId)
+      // Get the real conversation ID from API response
+      const realConversationId = data.conversationId
 
-      // Add assistant message
+      // If this was a new conversation OR we had a temporary ID, replace it with the real one
+      if (isNewConversation && realConversationId) {
+        console.log(`✅ [NEW CONV] Created conversation: ${realConversationId}`)
+
+        const { createConversation, selectConversation, deleteConversation } = useChatStore.getState()
+
+        // If we had a temporary conversation, delete it first
+        if (currentConvId && isTemporaryId) {
+          console.log(`🗑️ [CLEANUP] Deleting temporary conversation: ${currentConvId}`)
+          deleteConversation(currentConvId)
+        }
+
+        // Create the real conversation in the store
+        const newConversation = {
+          id: realConversationId,
+          user_id: data.message?.user_id || 'user',
+          agent_id: selectedAgentId,
+          title: 'Nouvelle conversation',
+          summary: null,
+          status: 'active' as const,
+          metadata: {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+
+        createConversation(selectedAgentId, newConversation)
+        selectConversation(realConversationId)
+        conversationId = realConversationId
+
+        console.log(`✅ [NEW CONV] Selected real conversation: ${realConversationId}`)
+      }
+
+      // Now conversationId is definitely set (either from currentConvId or from API)
+
+      // Add messages to the conversation
       if (data.success && data.message) {
-        addMessage(conversationId, {
+        // Remove loading message if it exists
+        if (loadingMessageId && !isNewConversation) {
+          const { deleteMessage } = useChatStore.getState()
+          deleteMessage(conversationId!, loadingMessageId)
+        }
+
+        // Add user message (for new conversations, we add it now since we didn't before)
+        if (isNewConversation) {
+          const userMessage = {
+            id: `msg-user-${Date.now()}`,
+            role: 'user' as const,
+            content: messageContent,
+            model_used: null,
+            tokens_used: null,
+            latency_ms: null,
+            metadata: {},
+            created_at: new Date().toISOString(),
+          }
+          addMessage(conversationId!, userMessage)
+          console.log(`✅ [NEW CONV] Added user message to new conversation`)
+        }
+
+        // Add assistant message
+        addMessage(conversationId!, {
           id: data.message.id,
           role: 'assistant' as const,
           content: data.message.content,
@@ -179,6 +239,8 @@ export function MessageInput() {
           metadata: {},
           created_at: data.message.created_at,
         })
+
+        console.log(`✅ [MESSAGES] Added assistant message to conversation: ${conversationId}`)
 
         // Refresh conversation title after a short delay (to allow title generation)
         setTimeout(async () => {
@@ -190,11 +252,11 @@ export function MessageInput() {
             const { data: conv } = await supabase
               .from('conversations')
               .select('title')
-              .eq('id', conversationId)
+              .eq('id', conversationId!)
               .single()
 
             if (conv && conv.title) {
-              updateConversation(conversationId, { title: conv.title })
+              updateConversation(conversationId!, { title: conv.title })
             }
           } catch (error) {
             console.error('Failed to refresh conversation title:', error)
@@ -202,24 +264,22 @@ export function MessageInput() {
         }, 3000) // Wait 3 seconds for title generation
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error('❌ [ERROR] Error sending message:', error)
       setError(error instanceof Error ? error.message : 'Une erreur est survenue')
 
-      // Remove loading message
-      const { deleteMessage } = useChatStore.getState()
-      deleteMessage(conversationId, loadingMessageId)
-
-      // Add error message
-      addMessage(conversationId, {
-        id: `msg-error-${Date.now()}`,
-        role: 'assistant' as const,
-        content: `Désolé, une erreur est survenue : ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-        model_used: null,
-        tokens_used: null,
-        latency_ms: null,
-        metadata: { error: true },
-        created_at: new Date().toISOString(),
-      })
+      if (conversationId) {
+        // Add error message
+        addMessage(conversationId, {
+          id: `msg-error-${Date.now()}`,
+          role: 'assistant' as const,
+          content: `Désolé, une erreur est survenue : ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+          model_used: null,
+          tokens_used: null,
+          latency_ms: null,
+          metadata: { error: true },
+          created_at: new Date().toISOString(),
+        })
+      }
     } finally {
       setLoading(false)
     }

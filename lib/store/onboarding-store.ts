@@ -40,7 +40,8 @@ export interface OnboardingData {
   communicationStyle: 'professional' | 'accessible' | 'expert' | null
 
   // LLM Selection (for both types)
-  selectedLLM: 'claude' | 'gpt' | null
+  // Stores full model ID (e.g., 'claude-3-haiku-20240307', 'claude-3-sonnet-20240229')
+  selectedLLM: string | null
 
   // Agent metadata
   agentName: string
@@ -70,7 +71,7 @@ interface OnboardingStore {
   setGoalsAndValues: (primaryGoals: string[], businessValues: string, exampleProjects: string) => void
   setTaskDefinition: (taskDescription: string, taskSpecificGoal: string) => void
   setCommunicationStyle: (style: OnboardingData['communicationStyle']) => void
-  setSelectedLLM: (llm: 'claude' | 'gpt') => void
+  setSelectedLLM: (llm: string) => void
   setAgentName: (name: string) => void
   setCurrentStep: (step: number) => void
   nextStep: () => void
@@ -107,7 +108,7 @@ const initialData: OnboardingData = {
   taskDescription: '',
   taskSpecificGoal: '',
   communicationStyle: null,
-  selectedLLM: 'claude', // Default to Claude
+  selectedLLM: 'claude-3-haiku-20240307', // Default to Claude Haiku (recommended)
   agentName: '',
 }
 

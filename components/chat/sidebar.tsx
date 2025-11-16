@@ -9,12 +9,13 @@ import { useChatStore } from '@/lib/store/chat-store'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Bot, History, ChevronRight, Sparkles } from 'lucide-react'
+import { Plus, Bot, History, ChevronRight, Sparkles, BarChart3, Home } from 'lucide-react'
 import { AgentCard } from './agent-card'
 import { AgentSkeleton } from './loading-states'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export function ChatSidebar() {
   const router = useRouter()
@@ -36,6 +37,32 @@ export function ChatSidebar() {
 
   return (
     <div className="flex h-full flex-col">
+      {/* Navigation Links */}
+      <div className="border-b p-2">
+        <div className="grid grid-cols-2 gap-1.5">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-xs h-9"
+            >
+              <Home className="h-3.5 w-3.5 mr-2" />
+              Accueil
+            </Button>
+          </Link>
+          <Link href="/dashboard">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-xs h-9"
+            >
+              <BarChart3 className="h-3.5 w-3.5 mr-2" />
+              Dashboard
+            </Button>
+          </Link>
+        </div>
+      </div>
+
       {/* Agents Section */}
       <div className="flex-1 overflow-hidden">
         <div className="border-b">

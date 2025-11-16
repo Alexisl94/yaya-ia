@@ -43,6 +43,7 @@ interface ChatStore {
   createConversation: (agentId: string, conversation: ChatConversation) => void
   updateConversation: (conversationId: string, updates: Partial<ChatConversation>) => void
   deleteConversation: (conversationId: string) => void
+  migrateConversation: (agentId: string, oldId: string, newId: string, conversationData: ChatConversation) => void
 
   // Actions - Messages
   setMessages: (conversationId: string, messages: ChatMessage[]) => void
@@ -169,6 +170,35 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
           state.selectedConversationId === conversationId
             ? null
             : state.selectedConversationId,
+      }
+    }),
+
+  migrateConversation: (agentId, oldId, newId, conversationData) =>
+    set((state) => {
+      // Get messages from old conversation
+      const oldMessages = state.messages[oldId] || []
+
+      // Remove old conversation from list
+      const agentConversations = state.conversations[agentId] || []
+      const filteredConversations = agentConversations.filter(conv => conv.id !== oldId)
+
+      // Add new conversation with real ID
+      const newConversations = {
+        ...state.conversations,
+        [agentId]: [conversationData, ...filteredConversations],
+      }
+
+      // Migrate messages to new ID and remove old messages
+      const { [oldId]: _, ...restMessages } = state.messages
+      const newMessages = {
+        ...restMessages,
+        [newId]: oldMessages,
+      }
+
+      return {
+        conversations: newConversations,
+        messages: newMessages,
+        selectedConversationId: state.selectedConversationId === oldId ? newId : state.selectedConversationId,
       }
     }),
 

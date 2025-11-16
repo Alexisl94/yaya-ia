@@ -19,15 +19,16 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Chat API received:', {
       message: message ? `"${message.substring(0, 50)}..."` : '(empty)',
       agentId,
-      conversationId,
+      conversationId: conversationId || '(will create new)',
       attachmentIds,
       attachmentCount: attachmentIds.length
     })
 
     // Validate required fields (message can be empty if attachments are provided)
-    if ((!message && attachmentIds.length === 0) || !agentId || !conversationId) {
+    // conversationId is now optional - will be created if not provided
+    if ((!message && attachmentIds.length === 0) || !agentId) {
       return NextResponse.json(
-        { error: 'Missing required fields: message (or attachments), agentId, conversationId' },
+        { error: 'Missing required fields: message (or attachments), agentId' },
         { status: 400 }
       )
     }
@@ -62,13 +63,27 @@ export async function POST(request: NextRequest) {
 
     // Check if conversation exists, create if not
     let finalConversationId = conversationId
-    const { data: existingConv } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('id', conversationId)
-      .single()
+    let isNewConversation = false
 
-    if (!existingConv) {
+    if (conversationId) {
+      // Check if provided conversation exists
+      const { data: existingConv } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('id', conversationId)
+        .eq('user_id', user.id) // Security: verify ownership
+        .single()
+
+      if (!existingConv) {
+        // Conversation ID provided but doesn't exist - create new one
+        isNewConversation = true
+      }
+    } else {
+      // No conversation ID provided - create new one
+      isNewConversation = true
+    }
+
+    if (isNewConversation) {
       // Create new conversation
       const { data: newConv, error: convError } = await supabase
         .from('conversations')
@@ -90,6 +105,9 @@ export async function POST(request: NextRequest) {
       }
 
       finalConversationId = newConv.id
+      console.log('✅ Created new conversation:', finalConversationId)
+    } else {
+      console.log('✅ Using existing conversation:', finalConversationId)
     }
 
     // Fetch conversation history
@@ -101,8 +119,13 @@ export async function POST(request: NextRequest) {
       .limit(20) // Limit to last 20 messages for context
 
     if (messagesError) {
-      console.error('Error fetching messages:', messagesError)
+      console.error('❌ Error fetching messages:', messagesError)
       // Continue even if we can't fetch history
+    }
+
+    console.log(`📜 Fetched ${messages?.length || 0} messages from conversation history`)
+    if (messages && messages.length > 0) {
+      console.log(`📜 History preview: ${messages.map(m => `${m.role}: "${m.content.substring(0, 30)}..."`).join(' | ')}`)
     }
 
     // Build conversation history for Claude (simple text messages)
@@ -110,6 +133,8 @@ export async function POST(request: NextRequest) {
       role: msg.role as 'user' | 'assistant',
       content: msg.content,
     }))
+
+    console.log(`🤖 Sending ${conversationHistory.length} messages in history to Claude`)
 
     // Fetch attachments if provided
     const attachments = []
@@ -280,11 +305,19 @@ export async function POST(request: NextRequest) {
 
     // Call Claude API
     const startTime = Date.now()
+
+    // Use agent's model ID directly (should be full model ID like 'claude-3-haiku-20240307')
+    // Fallback to haiku if model is old format ('claude' or 'gpt')
+    let modelId = agent.model
+    if (modelId === 'claude' || !modelId.startsWith('claude-')) {
+      modelId = 'claude-3-haiku-20240307'
+    }
+
     const response = await sendMessage(
       agent.system_prompt,
       conversationHistory,
       {
-        model: agent.model === 'claude' ? 'claude-3-haiku-20240307' : undefined,
+        model: modelId,
         temperature: agent.temperature || 1,
         maxTokens: agent.max_tokens || 4096,
       }
@@ -387,6 +420,7 @@ export async function POST(request: NextRequest) {
     // Return response
     return NextResponse.json({
       success: true,
+      conversationId: finalConversationId, // Return the real conversation ID
       message: {
         id: savedAssistantMessage?.id,
         role: 'assistant',

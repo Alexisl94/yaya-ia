@@ -2,20 +2,24 @@
 
 /**
  * Step LLM Selection (Before Confirmation)
- * Choose between Claude and GPT (GPT currently unavailable)
+ * Choose between Claude models with granular pricing
  */
 
 import { useOnboardingStore } from '@/lib/store/onboarding-store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Brain, Zap, CheckCircle } from 'lucide-react'
+import { Brain, CheckCircle, Zap, TrendingUp, Rocket } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getAvailableModels, formatCurrency, type ModelConfig } from '@/lib/pricing/model-pricing'
 
 export function StepLLMSelection() {
   const { data, setSelectedLLM, nextStep, prevStep } = useOnboardingStore()
 
-  const handleSelectLLM = (llm: 'claude' | 'gpt') => {
-    setSelectedLLM(llm)
+  // Get all available Claude models (sorted by cost)
+  const availableModels = getAvailableModels()
+
+  const handleSelectModel = (modelId: string) => {
+    setSelectedLLM(modelId)
   }
 
   const handleContinue = () => {
@@ -23,8 +27,24 @@ export function StepLLMSelection() {
     nextStep()
   }
 
+  // Get icon for each model
+  const getModelIcon = (model: ModelConfig) => {
+    if (model.name === 'haiku') return <Zap className="w-10 h-10 text-primary" />
+    if (model.name === 'sonnet') return <TrendingUp className="w-10 h-10 text-purple-600" />
+    if (model.name === 'opus') return <Rocket className="w-10 h-10 text-orange-600" />
+    return <Brain className="w-10 h-10 text-primary" />
+  }
+
+  // Get gradient colors for each model
+  const getModelGradient = (model: ModelConfig) => {
+    if (model.name === 'haiku') return 'from-blue-100 to-cyan-100'
+    if (model.name === 'sonnet') return 'from-purple-100 to-pink-100'
+    if (model.name === 'opus') return 'from-orange-100 to-red-100'
+    return 'from-blue-100 to-cyan-100'
+  }
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto">
       <div className="text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
           <Brain className="w-8 h-8 text-primary" />
@@ -33,148 +53,131 @@ export function StepLLMSelection() {
           Choisissez votre modèle d'IA
         </h2>
         <p className="text-slate-600 text-lg">
-          Sélectionnez le modèle de langage qui alimentera votre agent
+          Sélectionnez le modèle Claude qui correspond le mieux à vos besoins et à votre budget
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 mt-8">
-        {/* Claude */}
-        <Card
-          onClick={() => handleSelectLLM('claude')}
-          className={cn(
-            'cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-105 relative',
-            'border-2',
-            data.selectedLLM === 'claude'
-              ? 'ring-2 ring-primary shadow-md bg-primary/5 border-primary'
-              : 'hover:border-primary'
-          )}
-        >
-          <CardContent className="p-8">
-            {/* Recommended Badge */}
-            <div className="absolute -top-3 -right-3 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-              <CheckCircle className="w-3 h-3" />
-              DISPONIBLE
-            </div>
+      {/* Model Cards */}
+      <div className="grid md:grid-cols-3 gap-4 mt-8">
+        {availableModels.map((model) => {
+          const isSelected = data.selectedLLM === model.id
+          const isRecommended = model.recommended
 
-            {/* Selected Indicator */}
-            {data.selectedLLM === 'claude' && (
-              <div className="absolute top-4 left-4 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white">
-                <CheckCircle className="w-4 h-4" />
-              </div>
-            )}
+          return (
+            <Card
+              key={model.id}
+              onClick={() => handleSelectModel(model.id)}
+              className={cn(
+                'cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-105 relative',
+                'border-2',
+                isSelected
+                  ? 'ring-2 ring-primary shadow-md bg-primary/5 border-primary'
+                  : 'hover:border-primary'
+              )}
+            >
+              <CardContent className="p-6">
+                {/* Recommended Badge */}
+                {isRecommended && (
+                  <div className="absolute -top-3 -right-3 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    RECOMMANDÉ
+                  </div>
+                )}
 
-            <div className="text-center space-y-4 mt-2">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-orange-100 to-pink-100 mb-2">
-                <span className="text-4xl">🤖</span>
-              </div>
+                {/* Selected Indicator */}
+                {isSelected && (
+                  <div className="absolute top-4 left-4 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white">
+                    <CheckCircle className="w-4 h-4" />
+                  </div>
+                )}
 
-              <h3 className="text-2xl font-bold text-slate-900">
-                Claude (Anthropic)
-              </h3>
+                <div className="text-center space-y-4 mt-2">
+                  {/* Icon */}
+                  <div className={cn(
+                    "inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br mb-2",
+                    getModelGradient(model)
+                  )}>
+                    {getModelIcon(model)}
+                  </div>
 
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Modèle avancé spécialisé dans la compréhension contextuelle profonde
-              </p>
+                  {/* Title */}
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900">
+                      {model.displayName}
+                    </h3>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mt-1">
+                      {model.speed === 'fast' && '⚡ Rapide'}
+                      {model.speed === 'medium' && '⚖️ Équilibré'}
+                      {model.speed === 'slow' && '🎯 Précis'}
+                    </p>
+                  </div>
 
-              <div className="pt-4 space-y-3 text-left">
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p className="text-sm text-slate-700">
-                    <strong>Excellence contextuelle</strong> : Comprend parfaitement les nuances et le contexte long
+                  {/* Description */}
+                  <p className="text-slate-600 text-sm leading-relaxed min-h-[40px]">
+                    {model.description}
                   </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p className="text-sm text-slate-700">
-                    <strong>Sécurité renforcée</strong> : Conçu pour être fiable et éthique
-                  </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p className="text-sm text-slate-700">
-                    <strong>Instructions complexes</strong> : Excelle dans le suivi d'instructions détaillées
-                  </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p className="text-sm text-slate-700">
-                    <strong>Idéal pour</strong> : Assistants compagnons, analyses approfondies
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* GPT (Disabled) */}
-        <Card
-          className={cn(
-            'relative opacity-60 cursor-not-allowed',
-            'border-2 border-slate-300'
-          )}
-        >
-          <CardContent className="p-8">
-            {/* Unavailable Badge */}
-            <div className="absolute -top-3 -right-3 bg-slate-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-              BIENTÔT DISPONIBLE
-            </div>
+                  {/* Pricing */}
+                  <div className="pt-4 pb-2 border-t border-slate-200">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Prix estimé</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {formatCurrency(model.estimatedCostPer100Messages)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">pour ~100 messages</p>
+                    </div>
+                  </div>
 
-            <div className="text-center space-y-4 mt-2">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-teal-100 mb-2">
-                <Zap className="w-10 h-10 text-teal-600" />
-              </div>
-
-              <h3 className="text-2xl font-bold text-slate-900">
-                GPT (OpenAI)
-              </h3>
-
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Modèle polyvalent connu pour sa créativité et sa rapidité
-              </p>
-
-              <div className="pt-4 space-y-3 text-left">
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2" />
-                  <p className="text-sm text-slate-600">
-                    <strong>Créativité</strong> : Génération de contenu original et créatif
-                  </p>
+                  {/* Features */}
+                  <div className="pt-4 space-y-2 text-left">
+                    <div className="flex items-start gap-2">
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full mt-1.5",
+                        isSelected ? "bg-primary" : "bg-slate-400"
+                      )} />
+                      <p className="text-xs text-slate-700">
+                        <strong>Qualité:</strong> {model.quality === 'excellent' ? 'Excellente' : model.quality === 'good' ? 'Bonne' : 'Basique'}
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full mt-1.5",
+                        isSelected ? "bg-primary" : "bg-slate-400"
+                      )} />
+                      <p className="text-xs text-slate-700">
+                        <strong>Contexte:</strong> {(model.contextWindow / 1000).toFixed(0)}K tokens
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full mt-1.5",
+                        isSelected ? "bg-primary" : "bg-slate-400"
+                      )} />
+                      <p className="text-xs text-slate-700">
+                        <strong>Prix:</strong> ${model.inputPricePerMillion}/M tokens (entrée)
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2" />
-                  <p className="text-sm text-slate-600">
-                    <strong>Polyvalence</strong> : Excellent sur une large gamme de tâches
-                  </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2" />
-                  <p className="text-sm text-slate-600">
-                    <strong>Rapidité</strong> : Réponses rapides et fluides
-                  </p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2" />
-                  <p className="text-sm text-slate-600">
-                    <strong>Idéal pour</strong> : Tâches créatives, brainstorming, génération de contenu
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-6">
-                <p className="text-sm text-slate-500 italic">
-                  L'intégration GPT sera ajoutée prochainement
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Info Box */}
       <Card className="bg-blue-50 border-blue-200 mt-8">
         <CardContent className="p-6">
-          <p className="text-sm text-blue-900 text-center">
-            <strong>💡 À savoir :</strong> Vous pourrez changer de modèle plus tard dans les paramètres de l'agent. Le choix du modèle n'affecte pas les fonctionnalités de base, mais peut influencer le style et la qualité des réponses.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-blue-900">
+              <strong>💡 À savoir :</strong> Vous pourrez changer de modèle à tout moment dans les paramètres de l'agent.
+            </p>
+            <p className="text-xs text-blue-800">
+              • <strong>Haiku</strong> est idéal pour un usage quotidien et économique<br />
+              • <strong>Sonnet</strong> offre le meilleur rapport qualité/prix pour des tâches complexes<br />
+              • <strong>Opus</strong> est recommandé pour les analyses approfondies et les tâches critiques
+            </p>
+          </div>
         </CardContent>
       </Card>
 
