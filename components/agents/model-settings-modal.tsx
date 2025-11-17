@@ -109,7 +109,7 @@ export function ModelSettingsModal({
             <Alert className="border-amber-200 bg-amber-50">
               <TrendingDown className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-900">
-                <p className="font-semibold mb-1">💡 Recommandation d'optimisation</p>
+                <p className="font-semibold mb-1">Recommandation d'optimisation</p>
                 <p className="text-sm">{recommendation.reason}</p>
                 {potentialSavings && (
                   <p className="text-sm mt-2 font-semibold">

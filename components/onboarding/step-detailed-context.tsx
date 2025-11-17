@@ -14,9 +14,9 @@ import { Input } from '@/components/ui/input'
 import { Users, FileText, AlertCircle, Wrench } from 'lucide-react'
 
 const PROJECT_SIZES = [
-  { value: 'small', label: 'Petits projets', description: 'Budget < 5K€', icon: '📦' },
-  { value: 'medium', label: 'Projets moyens', description: 'Budget 5-20K€', icon: '📋' },
-  { value: 'large', label: 'Grands projets', description: 'Budget > 20K€', icon: '🏗️' },
+  { value: 'small', label: 'Petits projets', description: 'Budget < 5K€', icon: '' },
+  { value: 'medium', label: 'Projets moyens', description: 'Budget 5-20K€', icon: '' },
+  { value: 'large', label: 'Grands projets', description: 'Budget > 20K€', icon: '' },
   { value: 'mixed', label: 'Mixte', description: 'Tous budgets', icon: '🔀' }
 ]
 

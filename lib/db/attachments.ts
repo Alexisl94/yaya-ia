@@ -35,7 +35,7 @@ export async function createAttachment(
   input: CreateAttachmentInput
 ): Promise<DatabaseResult<ConversationAttachment>> {
   try {
-    console.log('🔧 Attempting to create attachment with admin client (service_role)')
+    console.log('[DB] Attempting to create attachment with admin client (service_role)')
 
     // Use admin client with service role
     const supabase = createAdminClient()
@@ -59,10 +59,10 @@ export async function createAttachment(
       .single()
 
     if (error) {
-      console.error('❌ Supabase INSERT error:', error)
-      console.error('❌ Error code:', error.code)
-      console.error('❌ Error message:', error.message)
-      console.error('❌ Error details:', error.details)
+      console.error('[ERROR] Supabase INSERT error:', error)
+      console.error('[ERROR] Error code:', error.code)
+      console.error('[ERROR] Error message:', error.message)
+      console.error('[ERROR] Error details:', error.details)
 
       return {
         success: false,
@@ -74,10 +74,10 @@ export async function createAttachment(
       }
     }
 
-    console.log('✅ Attachment created successfully! ID:', data.id)
+    console.log('[SUCCESS] Attachment created successfully! ID:', data.id)
     return { success: true, data }
   } catch (error) {
-    console.error('❌ Unexpected error in createAttachment:', error)
+    console.error('[ERROR] Unexpected error in createAttachment:', error)
     return {
       success: false,
       error: {

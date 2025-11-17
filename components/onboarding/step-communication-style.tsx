@@ -30,7 +30,7 @@ const COMMUNICATION_STYLES = [
     value: 'expert' as const,
     label: 'Expert',
     description: 'Ton technique et approfondi',
-    icon: '🎯',
+    icon: '',
     example: 'Vocabulaire technique et explications détaillées'
   }
 ]

@@ -34,8 +34,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { getModelInfo, formatCostEUR, getCostBadgeColor } from '@/lib/utils/model-utils'
+import { getModelInfo } from '@/lib/utils/model-utils'
 import { ModelSettingsModal } from '@/components/agents/model-settings-modal'
+import {
+  convertBudgetToDoggo,
+  formatDoggo,
+  getDoggoProgressColor,
+  getDoggoStatusMessage,
+  getModelConsumption,
+  type DoggoBudget
+} from '@/lib/utils/doggo-pricing'
 
 interface AgentsPageClientProps {
   userId: string
@@ -223,63 +231,78 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Monthly Budget Bar */}
-        {monthlyBudget && monthlyBudget.total_cost_usd > 0 && (
-          <Card className="mb-6 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    Budget du mois
-                  </h3>
-                  <span className={cn(
-                    "px-2 py-0.5 rounded-full text-xs font-semibold",
-                    monthlyBudget.budget_used_percent < 50 && "bg-green-100 text-green-700",
-                    monthlyBudget.budget_used_percent >= 50 && monthlyBudget.budget_used_percent < 80 && "bg-yellow-100 text-yellow-700",
-                    monthlyBudget.budget_used_percent >= 80 && "bg-red-100 text-red-700"
-                  )}>
-                    {monthlyBudget.budget_used_percent.toFixed(0)}% utilisé
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-slate-900">
-                    {formatCostEUR(monthlyBudget.total_cost_usd)}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    sur {formatCostEUR(monthlyBudget.budget_limit_usd)} disponible
-                  </p>
-                </div>
-              </div>
+        {/* Doggo Usage Bar */}
+        {monthlyBudget && monthlyBudget.total_cost_usd > 0 && (() => {
+          const doggo = convertBudgetToDoggo(monthlyBudget)
+          const colors = getDoggoProgressColor(doggo.percentUsed)
+          const status = getDoggoStatusMessage(doggo.percentUsed)
 
-              {/* Progress bar */}
-              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full transition-all duration-500 rounded-full",
-                    monthlyBudget.budget_used_percent < 50 && "bg-gradient-to-r from-green-500 to-green-600",
-                    monthlyBudget.budget_used_percent >= 50 && monthlyBudget.budget_used_percent < 80 && "bg-gradient-to-r from-yellow-500 to-yellow-600",
-                    monthlyBudget.budget_used_percent >= 80 && "bg-gradient-to-r from-red-500 to-red-600"
-                  )}
-                  style={{ width: `${Math.min(monthlyBudget.budget_used_percent, 100)}%` }}
-                />
-              </div>
-
-              {/* Stats summary */}
-              <div className="flex items-center gap-4 mt-3 text-xs text-slate-600">
-                <div className="flex items-center gap-1">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>{monthlyBudget.total_conversations} conversations</span>
-                </div>
-                {monthlyBudget.budget_used_percent >= 80 && (
-                  <div className="flex items-center gap-1 text-red-600 font-medium">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Attention : budget bientôt épuisé</span>
+          return (
+            <Card className="mb-6 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🐕</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Votre Doggo du mois
+                      </h3>
+                      <p className="text-xs text-slate-600">
+                        {status.message}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <div className="text-right">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-bold text-slate-900">
+                        {doggo.percentUsed.toFixed(0)}
+                      </span>
+                      <span className="text-lg text-slate-600">%</span>
+                    </div>
+                    <span className={cn(
+                      "inline-block px-2 py-0.5 rounded-full text-xs font-semibold mt-1",
+                      colors.badge
+                    )}>
+                      {formatDoggo(doggo.usedDoggo, { decimals: 2 })} / {formatDoggo(doggo.limitDoggo, { decimals: 0 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden mb-3">
+                  <div
+                    className={cn(
+                      "h-full transition-all duration-500 rounded-full bg-gradient-to-r",
+                      colors.gradient
+                    )}
+                    style={{ width: `${Math.min(doggo.percentUsed, 100)}%` }}
+                  />
+                </div>
+
+                {/* Stats summary */}
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-4 text-slate-600">
+                    <div className="flex items-center gap-1.5">
+                      <MessageSquare className="w-4 h-4" />
+                      <span className="font-medium">{doggo.totalConversations} conversations</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn("font-semibold", colors.text)}>
+                        {formatDoggo(doggo.remaining, { decimals: 2 })} restant{doggo.remaining !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                  {status.alert && (
+                    <div className="flex items-center gap-1.5 text-red-600 font-medium">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Passez au palier supérieur</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })()}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -474,22 +497,28 @@ export function AgentsPageClient({ userId }: AgentsPageClientProps) {
                       </span>
                     </div>
 
-                    {/* Monthly Cost Badge - Always show, even if 0 */}
-                    <div className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded-md border",
-                      agent.total_cost_usd > 0
-                        ? (
-                          getCostBadgeColor(agent.total_cost_usd).color === 'green' && "bg-green-50 border-green-200 text-green-700" ||
-                          getCostBadgeColor(agent.total_cost_usd).color === 'yellow' && "bg-yellow-50 border-yellow-200 text-yellow-700" ||
-                          getCostBadgeColor(agent.total_cost_usd).color === 'red' && "bg-red-50 border-red-200 text-red-700"
-                        )
-                        : "bg-slate-50 border-slate-200 text-slate-600"
-                    )}>
-                      <span>{agent.total_cost_usd > 0 ? getCostBadgeColor(agent.total_cost_usd).emoji : '💰'}</span>
-                      <span className="font-semibold">
-                        {formatCostEUR(agent.total_cost_usd || 0)}/mois
-                      </span>
-                    </div>
+                    {/* Doggo Consumption Badge */}
+                    {(() => {
+                      const consumption = getModelConsumption(agent.model as ModelType)
+                      return (
+                        <div className={cn(
+                          "flex items-center gap-1.5 px-2 py-1 rounded-md border",
+                          consumption.level === 'low' && "bg-green-50 border-green-200",
+                          consumption.level === 'medium' && "bg-yellow-50 border-yellow-200",
+                          consumption.level === 'high' && "bg-orange-50 border-orange-200"
+                        )}>
+                          <span className="text-sm">{consumption.icon}</span>
+                          <span className={cn(
+                            "font-medium text-xs",
+                            consumption.level === 'low' && "text-green-700",
+                            consumption.level === 'medium' && "text-yellow-700",
+                            consumption.level === 'high' && "text-orange-700"
+                          )}>
+                            {consumption.label}
+                          </span>
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Actions */}

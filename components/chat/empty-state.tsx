@@ -89,7 +89,7 @@ export function ChatEmptyState({ onSuggestionClick }: EmptyStateProps) {
 
         {/* Helper text */}
         <p className="text-xs text-muted-foreground">
-          💡 Astuce : Vous pouvez aussi utiliser{' '}
+          Astuce : Vous pouvez aussi utiliser{' '}
           <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono">
             /
           </kbd>{' '}

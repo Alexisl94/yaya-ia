@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { sendMessage } from '@/lib/llm/anthropic-client'
+import { sendMessage } from '@/lib/llm/llm-router'
 import { generateConversationTitle } from '@/lib/llm/generate-title'
 import { createClient } from '@/lib/supabase/server'
 import { getAttachmentById } from '@/lib/db/attachments'
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { message, agentId, conversationId, attachmentIds = [] } = body
 
-    console.log('🔍 Chat API received:', {
+    console.log('[SEARCH] Chat API received:', {
       message: message ? `"${message.substring(0, 50)}..."` : '(empty)',
       agentId,
       conversationId: conversationId || '(will create new)',
@@ -105,9 +105,9 @@ export async function POST(request: NextRequest) {
       }
 
       finalConversationId = newConv.id
-      console.log('✅ Created new conversation:', finalConversationId)
+      console.log('[SUCCESS] Created new conversation:', finalConversationId)
     } else {
-      console.log('✅ Using existing conversation:', finalConversationId)
+      console.log('[SUCCESS] Using existing conversation:', finalConversationId)
     }
 
     // Fetch conversation history
@@ -119,13 +119,13 @@ export async function POST(request: NextRequest) {
       .limit(20) // Limit to last 20 messages for context
 
     if (messagesError) {
-      console.error('❌ Error fetching messages:', messagesError)
+      console.error('[ERROR] Error fetching messages:', messagesError)
       // Continue even if we can't fetch history
     }
 
-    console.log(`📜 Fetched ${messages?.length || 0} messages from conversation history`)
+    console.log(`[HISTORY] Fetched ${messages?.length || 0} messages from conversation history`)
     if (messages && messages.length > 0) {
-      console.log(`📜 History preview: ${messages.map(m => `${m.role}: "${m.content.substring(0, 30)}..."`).join(' | ')}`)
+      console.log(`[HISTORY] History preview: ${messages.map(m => `${m.role}: "${m.content.substring(0, 30)}..."`).join(' | ')}`)
     }
 
     // Build conversation history for Claude (simple text messages)
@@ -134,35 +134,35 @@ export async function POST(request: NextRequest) {
       content: msg.content,
     }))
 
-    console.log(`🤖 Sending ${conversationHistory.length} messages in history to Claude`)
+    console.log(`[LLM] Sending ${conversationHistory.length} messages in history to Claude`)
 
     // Fetch attachments if provided
     const attachments = []
     if (attachmentIds.length > 0) {
-      console.log(`📎 Fetching ${attachmentIds.length} attachments...`)
+      console.log(`[ATTACH] Fetching ${attachmentIds.length} attachments...`)
       for (const attachmentId of attachmentIds) {
         const result = await getAttachmentById(attachmentId)
         if (result.success && result.data) {
           attachments.push(result.data)
-          console.log(`✅ Fetched attachment: ${result.data.file_name}, extracted_text length: ${result.data.extracted_text?.length || 0}`)
+          console.log(`[SUCCESS] Fetched attachment: ${result.data.file_name}, extracted_text length: ${result.data.extracted_text?.length || 0}`)
         } else {
-          console.error(`❌ Failed to fetch attachment ${attachmentId}:`, result.error)
+          console.error(`[ERROR] Failed to fetch attachment ${attachmentId}:`, result.error)
         }
       }
-      console.log(`📎 Total attachments fetched: ${attachments.length}`)
+      console.log(`[ATTACH] Total attachments fetched: ${attachments.length}`)
     }
 
     // Build multimodal content for current user message
     const userMessageContent: any[] = []
 
-    // Extract and add text documents (PDFs and scraped content) as context
+    // Extract and add text documents (PDFs, scraped content, and web search results) as context
     const textDocuments = attachments.filter(a =>
-      a.file_type === 'application/pdf' || a.file_type === 'text/plain'
+      a.file_type === 'application/pdf' || a.file_type === 'text/plain' || a.file_type === 'text/websearch'
     )
     let documentContext = ''
 
     if (textDocuments.length > 0) {
-      console.log(`📄 Processing ${textDocuments.length} text document(s)...`)
+      console.log(`[DOC] Processing ${textDocuments.length} text document(s)...`)
 
       for (const doc of textDocuments) {
         let docText = doc.extracted_text || ''
@@ -185,28 +185,36 @@ export async function POST(request: NextRequest) {
 
                 if (result) {
                   docText = result.text
-                  console.log(`✅ PDF extracted: ${docText.length} chars from ${result.pageCount} pages`)
+                  console.log(`[SUCCESS] PDF extracted: ${docText.length} chars from ${result.pageCount} pages`)
                 } else {
                   docText = '[Extraction failed]'
                 }
-              } else if (doc.file_type === 'text/plain') {
+              } else if (doc.file_type === 'text/plain' || doc.file_type === 'text/websearch') {
                 // Read text file directly
                 docText = buffer.toString('utf-8')
-                console.log(`✅ Text file read: ${docText.length} chars`)
+                console.log(`[SUCCESS] Text file read: ${docText.length} chars`)
               }
             }
           } catch (error) {
-            console.error('❌ Document extraction error:', error)
+            console.error('[ERROR] Document extraction error:', error)
             docText = '[Extraction error]'
           }
         } else {
-          console.log(`✅ Using cached text: ${doc.file_name} (${docText.length} chars)`)
+          console.log(`[SUCCESS] Using cached text: ${doc.file_name} (${docText.length} chars)`)
         }
 
         // Add document icon based on type
-        const icon = doc.file_type === 'application/pdf' ? '📄' : '🌐'
+        let icon = '[DOC]'
+        if (doc.file_type === 'text/websearch') {
+          icon = '[SEARCH]'
+        } else if (doc.file_type === 'text/plain' && doc.metadata?.scraped) {
+          icon = '[WEB]'
+        }
+
         const sourceInfo = doc.metadata?.source_url
           ? `\n**Source:** ${doc.metadata.source_url}\n`
+          : doc.metadata?.websearch && doc.metadata?.query
+          ? `\n**Recherche:** ${doc.metadata.query}\n**Moteur:** ${doc.metadata.search_engine || 'Web'}\n`
           : ''
 
         documentContext += `\n\n${icon} **Document: ${doc.file_name}**\n${sourceInfo}\n${docText}\n\n---\n`
@@ -306,18 +314,12 @@ export async function POST(request: NextRequest) {
     // Call Claude API
     const startTime = Date.now()
 
-    // Use agent's model ID directly (should be full model ID like 'claude-3-haiku-20240307')
-    // Fallback to haiku if model is old format ('claude' or 'gpt')
-    let modelId = agent.model
-    if (modelId === 'claude' || !modelId.startsWith('claude-')) {
-      modelId = 'claude-3-haiku-20240307'
-    }
-
+    // The LLM router will handle model selection and provider routing
     const response = await sendMessage(
       agent.system_prompt,
       conversationHistory,
       {
-        model: modelId,
+        model: agent.model,
         temperature: agent.temperature || 1,
         maxTokens: agent.max_tokens || 4096,
       }

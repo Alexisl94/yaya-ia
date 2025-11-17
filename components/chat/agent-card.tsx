@@ -21,7 +21,7 @@ interface AgentCardProps {
 
 export function AgentCard({ agent, isActive, messageCount = 0, onClick }: AgentCardProps) {
   // Get first letter of name for avatar
-  const avatarText = agent.name[0] || '🤖'
+  const avatarText = agent.name[0] || 'A'
 
   // Get agent type from settings (fallback for PostgREST cache issues)
   const agentType = (agent.settings as any)?.agentType || agent.agent_type || 'companion'

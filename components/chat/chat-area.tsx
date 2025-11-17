@@ -208,7 +208,7 @@ export function ChatArea() {
                   ? "bg-amber-100 text-amber-700 border border-amber-300"
                   : "bg-purple-100 text-purple-700 border border-purple-300"
               )}>
-                {agentType === 'companion' ? '✨ COMPAGNON' : '🎯 TÂCHE'}
+                {agentType === 'companion' ? 'COMPAGNON' : 'TÂCHE'}
               </span>
               {/* LLM Badge */}
               <span className={cn(
@@ -400,7 +400,7 @@ export function ChatArea() {
                     const selectedModel = getModelById(editedAgent.model)
                     return selectedModel && (
                       <p className="text-xs text-muted-foreground">
-                        {selectedModel.description} • {selectedModel.speed === 'fast' ? '⚡ Rapide' : selectedModel.speed === 'medium' ? '⚖️ Équilibré' : '🎯 Précis'}
+                        {selectedModel.description} • {selectedModel.speed === 'fast' ? 'Rapide' : selectedModel.speed === 'medium' ? 'Équilibré' : 'Précis'}
                       </p>
                     )
                   })()}

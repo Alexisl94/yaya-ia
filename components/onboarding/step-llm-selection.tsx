@@ -11,6 +11,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Brain, CheckCircle, Zap, TrendingUp, Rocket } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAvailableModels, formatCurrency, type ModelConfig } from '@/lib/pricing/model-pricing'
+import { getModelConsumption } from '@/lib/utils/doggo-pricing'
+import type { ModelType } from '@/types/database'
 
 export function StepLLMSelection() {
   const { data, setSelectedLLM, nextStep, prevStep } = useOnboardingStore()
@@ -106,9 +108,9 @@ export function StepLLMSelection() {
                       {model.displayName}
                     </h3>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mt-1">
-                      {model.speed === 'fast' && '⚡ Rapide'}
-                      {model.speed === 'medium' && '⚖️ Équilibré'}
-                      {model.speed === 'slow' && '🎯 Précis'}
+                      {model.speed === 'fast' && 'Rapide'}
+                      {model.speed === 'medium' && 'Équilibré'}
+                      {model.speed === 'slow' && 'Précis'}
                     </p>
                   </div>
 
@@ -117,16 +119,24 @@ export function StepLLMSelection() {
                     {model.description}
                   </p>
 
-                  {/* Pricing */}
-                  <div className="pt-4 pb-2 border-t border-slate-200">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Prix estimé</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {formatCurrency(model.estimatedCostPer100Messages)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">pour ~100 messages</p>
-                    </div>
-                  </div>
+                  {/* Doggo Consumption */}
+                  {(() => {
+                    const consumption = getModelConsumption(model.name as ModelType)
+                    return (
+                      <div className="pt-4 pb-2 border-t border-slate-200">
+                        <div className="flex flex-col items-center gap-2">
+                          <p className="text-xs text-slate-600 font-medium">Consommation Doggo</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-3xl">{consumption.icon}</span>
+                            <div className="text-left">
+                              <p className="font-bold text-sm text-slate-900">{consumption.label}</p>
+                              <p className="text-xs text-slate-600">{consumption.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
 
                   {/* Features */}
                   <div className="pt-4 space-y-2 text-left">
@@ -145,7 +155,7 @@ export function StepLLMSelection() {
                         isSelected ? "bg-primary" : "bg-slate-400"
                       )} />
                       <p className="text-xs text-slate-700">
-                        <strong>Contexte:</strong> {(model.contextWindow / 1000).toFixed(0)}K tokens
+                        <strong>Vitesse:</strong> {model.speed === 'fast' ? 'Très rapide' : model.speed === 'medium' ? 'Rapide' : 'Réfléchi'}
                       </p>
                     </div>
                     <div className="flex items-start gap-2">
@@ -154,7 +164,7 @@ export function StepLLMSelection() {
                         isSelected ? "bg-primary" : "bg-slate-400"
                       )} />
                       <p className="text-xs text-slate-700">
-                        <strong>Prix:</strong> ${model.inputPricePerMillion}/M tokens (entrée)
+                        <strong>Provider:</strong> {model.provider === 'anthropic' ? 'Claude (Anthropic)' : 'ChatGPT (OpenAI)'}
                       </p>
                     </div>
                   </div>
@@ -166,17 +176,23 @@ export function StepLLMSelection() {
       </div>
 
       {/* Info Box */}
-      <Card className="bg-blue-50 border-blue-200 mt-8">
+      <Card className="bg-amber-50 border-amber-200 mt-8">
         <CardContent className="p-6">
-          <div className="space-y-2">
-            <p className="text-sm text-blue-900">
-              <strong>💡 À savoir :</strong> Vous pourrez changer de modèle à tout moment dans les paramètres de l'agent.
-            </p>
-            <p className="text-xs text-blue-800">
-              • <strong>Haiku</strong> est idéal pour un usage quotidien et économique<br />
-              • <strong>Sonnet</strong> offre le meilleur rapport qualité/prix pour des tâches complexes<br />
-              • <strong>Opus</strong> est recommandé pour les analyses approfondies et les tâches critiques
-            </p>
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🐕</span>
+            <div className="space-y-2 flex-1">
+              <p className="text-sm text-amber-900 font-semibold">
+                À propos de votre Doggo
+              </p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Chaque mois, vous disposez d'<strong>1 Doggo</strong> pour utiliser vos agents.
+                Les modèles <strong>économiques</strong> 🐕 consomment peu de Doggo,
+                les <strong>modérés</strong> 🦮 un montant moyen,
+                et les <strong>intensifs</strong> 🐺 davantage.<br /><br />
+                <strong>Conseil :</strong> Commencez avec un modèle économique recommandé,
+                vous pourrez changer à tout moment !
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

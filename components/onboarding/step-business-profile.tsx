@@ -367,7 +367,7 @@ export function StepBusinessProfile() {
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <p className="text-sm text-blue-900">
-              <strong>💡 Pourquoi ces informations ?</strong> Elles permettent à tous vos agents
+              <strong> Pourquoi ces informations ?</strong> Elles permettent à tous vos agents
               (compagnon et tâches) de vous donner des conseils ultra-personnalisés adaptés à votre
               contexte réel. Vous pourrez modifier ce profil à tout moment.
             </p>

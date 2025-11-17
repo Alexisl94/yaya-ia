@@ -53,7 +53,7 @@ export function getPostgresPool(): Pool {
     console.error('Unexpected PostgreSQL pool error:', err)
   })
 
-  console.log('✅ Direct PostgreSQL pool created, bypassing PostgREST')
+  console.log('[SUCCESS] Direct PostgreSQL pool created, bypassing PostgREST')
 
   return pool
 }

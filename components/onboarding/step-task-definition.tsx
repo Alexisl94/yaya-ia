@@ -145,7 +145,7 @@ export function StepTaskDefinition() {
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <p className="text-sm text-blue-900">
-              <strong>💡 Conseil :</strong> Un agent tâche est plus efficace quand sa mission est bien délimitée. Créez plusieurs agents tâches plutôt qu'un seul agent qui fait tout.
+              <strong> Conseil :</strong> Un agent tâche est plus efficace quand sa mission est bien délimitée. Créez plusieurs agents tâches plutôt qu'un seul agent qui fait tout.
             </p>
           </CardContent>
         </Card>

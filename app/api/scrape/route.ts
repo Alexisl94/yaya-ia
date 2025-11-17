@@ -50,7 +50,7 @@ function generateFilenameFromUrl(url: string): string {
  */
 async function scrapeUrl(url: string): Promise<{ content: string; title: string; error?: string }> {
   try {
-    console.log('🌐 Scraping URL with Jina AI:', url)
+    console.log('[WEB] Scraping URL with Jina AI:', url)
 
     const response = await fetch(`${JINA_READER_BASE_URL}${encodeURIComponent(url)}`, {
       method: 'GET',
@@ -77,11 +77,11 @@ async function scrapeUrl(url: string): Promise<{ content: string; title: string;
       throw new Error('Aucun contenu récupéré de la page')
     }
 
-    console.log('✅ Successfully scraped:', title)
+    console.log('[SUCCESS] Successfully scraped:', title)
     return { content, title }
 
   } catch (error) {
-    console.error('❌ Scraping error:', error)
+    console.error('[ERROR] Scraping error:', error)
     return {
       content: '',
       title: '',
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Scrape all URLs
-    console.log(`🚀 Starting scrape for ${urls.length} URL(s)`)
+    console.log(`[START] Starting scrape for ${urls.length} URL(s)`)
     const scrapeResults = await Promise.all(urls.map(url => scrapeUrl(url)))
 
     // 5. Process successful scrapes and create attachments
@@ -174,7 +174,7 @@ ${result.content}
 
         // Upload to Supabase Storage
         const storagePath = `${user.id}/${conversation_id}/scraped/${safeFilename}`
-        console.log('📤 Uploading scraped content to storage:', storagePath)
+        console.log('[UPLOAD] Uploading scraped content to storage:', storagePath)
 
         const { error: uploadError } = await supabase.storage
           .from('conversation-attachments')
@@ -184,7 +184,7 @@ ${result.content}
           })
 
         if (uploadError) {
-          console.error('❌ Storage upload error:', uploadError)
+          console.error('[ERROR] Storage upload error:', uploadError)
           errors.push({ url, error: 'Échec de l\'upload du fichier' })
           continue
         }
@@ -208,7 +208,7 @@ ${result.content}
         })
 
         if (!attachmentResult.success) {
-          console.error('❌ Failed to create attachment record:', attachmentResult.error)
+          console.error('[ERROR] Failed to create attachment record:', attachmentResult.error)
           // Cleanup: delete uploaded file
           await supabase.storage
             .from('conversation-attachments')
@@ -228,10 +228,10 @@ ${result.content}
           url
         })
 
-        console.log('✅ Successfully created attachment for:', url)
+        console.log('[SUCCESS] Successfully created attachment for:', url)
 
       } catch (error) {
-        console.error('❌ Error processing scraped content:', error)
+        console.error('[ERROR] Error processing scraped content:', error)
         errors.push({
           url,
           error: error instanceof Error ? error.message : 'Erreur inconnue'

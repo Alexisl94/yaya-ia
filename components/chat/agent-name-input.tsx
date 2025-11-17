@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Sparkles, RefreshCw } from 'lucide-react'
+import { Sparkles, RefreshCw, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AgentNameInputProps {
@@ -213,7 +213,7 @@ export function AgentNameInput({
         <Label htmlFor="agent-name" className="flex items-center gap-2">
           Nom de l'agent
           {isValid && (
-            <span className="text-xs text-green-600 dark:text-green-500">✓</span>
+            <Check className="w-3 h-3 text-green-600 dark:text-green-500" />
           )}
         </Label>
         <span className={cn(
@@ -300,9 +300,9 @@ export function AgentNameInput({
       )}
 
       <div className="text-xs text-muted-foreground space-y-1">
-        <p>💡 <strong>Astuce :</strong></p>
+        <p><strong>Astuce :</strong></p>
         <ul className="list-disc list-inside space-y-0.5 ml-2">
-          <li>Cliquez sur ✨ pour générer automatiquement un nom pertinent</li>
+          <li>Cliquez sur le bouton Sparkles pour générer automatiquement un nom pertinent</li>
           <li>
             {agentType === 'companion'
               ? 'Jeux de mots basés sur "Doggo" pour votre compagnon IA'

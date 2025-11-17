@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     const storagePath = `${user.id}/${conversationId}/${safeFilename}`
 
     // 7. Upload file to Supabase Storage
-    console.log('📤 Uploading file to storage:', storagePath)
+    console.log('[UPLOAD] Uploading file to storage:', storagePath)
     const supabase = await createClient()
     const { error: uploadError } = await supabase.storage
       .from('conversation-attachments')
@@ -135,13 +135,13 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('❌ Storage upload error:', uploadError)
+      console.error('[ERROR] Storage upload error:', uploadError)
       return NextResponse.json(
         { success: false, error: 'Failed to upload file to storage' },
         { status: 500 }
       )
     }
-    console.log('✅ File uploaded to storage successfully')
+    console.log('[SUCCESS] File uploaded to storage successfully')
 
     // 8. Create attachment record in database
     console.log('💾 Creating attachment record in database:', {
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!attachmentResult.success) {
-      console.error('❌ Failed to create attachment record:', attachmentResult.error)
+      console.error('[ERROR] Failed to create attachment record:', attachmentResult.error)
 
       // Cleanup: delete uploaded file if DB insert fails
       await supabase.storage
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    console.log('✅ Attachment record created successfully')
+    console.log('[SUCCESS] Attachment record created successfully')
 
     // 9. Generate signed URL for immediate access
     const { data: urlData } = await supabase.storage

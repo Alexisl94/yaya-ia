@@ -9,10 +9,11 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Loader2, Paperclip, X, Globe } from 'lucide-react'
+import { Send, Loader2, Paperclip, X, Globe, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FileUploader } from '@/components/chat/file-uploader'
 import { WebScraper } from '@/components/chat/web-scraper'
+import { WebSearcher } from '@/components/chat/web-searcher'
 import { MessageAttachment } from '@/components/chat/message-attachment'
 import type { ConversationAttachment } from '@/types/database'
 
@@ -20,6 +21,7 @@ export function MessageInput() {
   const [message, setMessage] = useState('')
   const [showUploader, setShowUploader] = useState(false)
   const [showScraper, setShowScraper] = useState(false)
+  const [showWebSearcher, setShowWebSearcher] = useState(false)
   const [pendingAttachments, setPendingAttachments] = useState<(ConversationAttachment & { signed_url?: string; thumbnail_url?: string })[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { isLoading, selectedConversationId, addMessage } = useChatStore()
@@ -43,6 +45,11 @@ export function MessageInput() {
     setShowScraper(false)
   }
 
+  const handleSearchComplete = (attachments: ConversationAttachment[]) => {
+    setPendingAttachments(prev => [...prev, ...attachments])
+    setShowWebSearcher(false)
+  }
+
   const handleRemoveAttachment = (attachmentId: string) => {
     setPendingAttachments(prev => prev.filter(a => a.id !== attachmentId))
   }
@@ -57,7 +64,7 @@ export function MessageInput() {
       return
     }
 
-    console.log('💬 [SUBMIT] Starting handleSubmit with conversationId:', currentConvId || 'NULL')
+    console.log('[SUBMIT] Starting handleSubmit with conversationId:', currentConvId || 'NULL')
 
     // Check if current conversation ID is a temporary ID (created by UI button)
     const isTemporaryId = currentConvId?.startsWith('conv-') || currentConvId?.startsWith('temp-conv-')
@@ -66,9 +73,9 @@ export function MessageInput() {
     let conversationId = (currentConvId && !isTemporaryId) ? currentConvId : null
     const isNewConversation = !conversationId || isTemporaryId
 
-    console.log('💬 [SUBMIT] isTemporaryId:', isTemporaryId)
-    console.log('💬 [SUBMIT] isNewConversation:', isNewConversation)
-    console.log('💬 [SUBMIT] Will send to API:', conversationId || 'NULL')
+    console.log('[SUBMIT] isTemporaryId:', isTemporaryId)
+    console.log('[SUBMIT] isNewConversation:', isNewConversation)
+    console.log('[SUBMIT] Will send to API:', conversationId || 'NULL')
 
     // Save message content before clearing
     const messageContent = message.trim()
@@ -135,7 +142,7 @@ export function MessageInput() {
             // Add existing attachment IDs (avoid duplicates)
             const existingIds = existingAttachments.map(a => a.id)
             allAttachmentIds = Array.from(new Set([...existingIds, ...allAttachmentIds]))
-            console.log(`📎 Sending ${allAttachmentIds.length} attachments to AI (${existingIds.length} existing + ${pendingAttachments.length} new)`)
+            console.log(`[ATTACHMENTS] Sending ${allAttachmentIds.length} attachments to AI (${existingIds.length} existing + ${pendingAttachments.length} new)`)
           }
         } catch (error) {
           console.error('Failed to fetch existing attachments:', error)
@@ -143,7 +150,7 @@ export function MessageInput() {
         }
       }
 
-      console.log('💬 [API] Sending request with conversationId:', isNewConversation ? 'NULL' : conversationId)
+      console.log('[API] Sending request with conversationId:', isNewConversation ? 'NULL' : conversationId)
 
       // Call chat API
       const response = await fetch('/api/chat', {
@@ -165,20 +172,20 @@ export function MessageInput() {
       }
 
       const data = await response.json()
-      console.log('💬 [API] Received response with conversationId:', data.conversationId)
+      console.log('[API] Received response with conversationId:', data.conversationId)
 
       // Get the real conversation ID from API response
       const realConversationId = data.conversationId
 
       // If this was a new conversation OR we had a temporary ID, replace it with the real one
       if (isNewConversation && realConversationId) {
-        console.log(`✅ [NEW CONV] Created conversation: ${realConversationId}`)
+        console.log(`[NEW CONV] Created conversation: ${realConversationId}`)
 
         const { createConversation, selectConversation, deleteConversation } = useChatStore.getState()
 
         // If we had a temporary conversation, delete it first
         if (currentConvId && isTemporaryId) {
-          console.log(`🗑️ [CLEANUP] Deleting temporary conversation: ${currentConvId}`)
+          console.log(`[CLEANUP] Deleting temporary conversation: ${currentConvId}`)
           deleteConversation(currentConvId)
         }
 
@@ -199,7 +206,7 @@ export function MessageInput() {
         selectConversation(realConversationId)
         conversationId = realConversationId
 
-        console.log(`✅ [NEW CONV] Selected real conversation: ${realConversationId}`)
+        console.log(`[NEW CONV] Selected real conversation: ${realConversationId}`)
       }
 
       // Now conversationId is definitely set (either from currentConvId or from API)
@@ -225,7 +232,7 @@ export function MessageInput() {
             created_at: new Date().toISOString(),
           }
           addMessage(conversationId!, userMessage)
-          console.log(`✅ [NEW CONV] Added user message to new conversation`)
+          console.log(`[NEW CONV] Added user message to new conversation`)
         }
 
         // Add assistant message
@@ -240,7 +247,7 @@ export function MessageInput() {
           created_at: data.message.created_at,
         })
 
-        console.log(`✅ [MESSAGES] Added assistant message to conversation: ${conversationId}`)
+        console.log(`[MESSAGES] Added assistant message to conversation: ${conversationId}`)
 
         // Refresh conversation title after a short delay (to allow title generation)
         setTimeout(async () => {
@@ -264,7 +271,7 @@ export function MessageInput() {
         }, 3000) // Wait 3 seconds for title generation
       }
     } catch (error) {
-      console.error('❌ [ERROR] Error sending message:', error)
+      console.error('[ERROR] Error sending message:', error)
       setError(error instanceof Error ? error.message : 'Une erreur est survenue')
 
       if (conversationId) {
@@ -366,6 +373,21 @@ export function MessageInput() {
           <Globe className="h-5 w-5" />
         </Button>
 
+        {/* Web Search Button */}
+        <Button
+          onClick={() => setShowWebSearcher(true)}
+          disabled={isLoading || !selectedConversationId}
+          size="icon"
+          variant="outline"
+          className={cn(
+            'h-[56px] w-[56px] rounded-2xl shadow-sm',
+            'hover:shadow-md transition-all',
+            'disabled:opacity-50 disabled:cursor-not-allowed'
+          )}
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+
         {/* Send Button */}
         <Button
           onClick={handleSubmit}
@@ -421,6 +443,19 @@ export function MessageInput() {
               conversationId={selectedConversationId}
               onScrapeComplete={handleScrapeComplete}
               onClose={() => setShowScraper(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Web Search Modal */}
+      {showWebSearcher && selectedConversationId && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="max-w-lg w-full">
+            <WebSearcher
+              conversationId={selectedConversationId}
+              onSearchComplete={handleSearchComplete}
+              onClose={() => setShowWebSearcher(false)}
             />
           </div>
         </div>

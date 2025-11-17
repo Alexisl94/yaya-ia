@@ -36,7 +36,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     provider: 'anthropic',
     displayName: 'Claude 3 Haiku',
     description: 'Rapide et économique, parfait pour un usage quotidien',
-    icon: '⚡',
+    icon: '',
     inputPricePerMillion: 0.25,
     outputPricePerMillion: 1.25,
     estimatedCostPer100Messages: 0.15, // ~15 centimes
@@ -52,7 +52,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     provider: 'anthropic',
     displayName: 'Claude 3 Sonnet',
     description: 'Équilibre idéal entre performance et coût',
-    icon: '⚖️',
+    icon: '',
     inputPricePerMillion: 3.0,
     outputPricePerMillion: 15.0,
     estimatedCostPer100Messages: 1.50, // ~1.50€
@@ -67,7 +67,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     provider: 'anthropic',
     displayName: 'Claude 3 Opus',
     description: 'Performance maximale pour les tâches complexes',
-    icon: '🚀',
+    icon: '',
     inputPricePerMillion: 15.0,
     outputPricePerMillion: 75.0,
     estimatedCostPer100Messages: 7.50, // ~7.50€
@@ -77,21 +77,22 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     available: true,
   },
 
-  // === GPT (OpenAI) - Disponible prochainement ===
+  // === GPT (OpenAI) ===
   'gpt-4o-mini': {
     id: 'gpt-4o-mini',
     name: 'gpt-4o-mini',
     provider: 'openai',
     displayName: 'GPT-4o Mini',
     description: 'Rapide et abordable, idéal pour les tâches simples',
-    icon: '⚡',
+    icon: '',
     inputPricePerMillion: 0.15,
     outputPricePerMillion: 0.60,
     estimatedCostPer100Messages: 0.10,
     speed: 'fast',
     quality: 'good',
     contextWindow: 128000,
-    available: false,
+    available: true,
+    recommended: true,
   },
   'gpt-4o': {
     id: 'gpt-4o',
@@ -99,14 +100,14 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     provider: 'openai',
     displayName: 'GPT-4o',
     description: 'Modèle puissant et polyvalent',
-    icon: '🎯',
+    icon: '',
     inputPricePerMillion: 2.50,
     outputPricePerMillion: 10.0,
     estimatedCostPer100Messages: 1.25,
     speed: 'medium',
     quality: 'excellent',
     contextWindow: 128000,
-    available: false,
+    available: true,
   },
 }
 

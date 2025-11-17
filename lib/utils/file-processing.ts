@@ -37,7 +37,7 @@ export async function extractPDFText(pdfBuffer: Buffer): Promise<{ text: string;
             extractedText += '\n\n' // Page break
           })
 
-          console.log(`✅ PDF extraction successful: ${extractedText.length} chars, ${pageCount} pages`)
+          console.log(`[SUCCESS] PDF extraction successful: ${extractedText.length} chars, ${pageCount} pages`)
 
           resolve({
             text: extractedText.trim(),

@@ -124,7 +124,7 @@ export function example1_FreelanceWeddingPlanner(): GeneratedPrompt {
   console.log(`   Version: ${prompt.metadata.version}`)
   console.log('\n📝 Preview:')
   console.log(getPromptPreview(prompt))
-  console.log('\n✅ Prompt complet généré avec succès!\n')
+  console.log('\n[SUCCESS] Prompt complet généré avec succès!\n')
 
   return prompt
 }
@@ -158,7 +158,7 @@ export function example2_MarketingAgency(): GeneratedPrompt {
   console.log(`   Version: ${prompt.metadata.version}`)
   console.log('\n📝 Preview:')
   console.log(getPromptPreview(prompt))
-  console.log('\n✅ Prompt complet généré avec succès!\n')
+  console.log('\n[SUCCESS] Prompt complet généré avec succès!\n')
 
   return prompt
 }
@@ -191,7 +191,7 @@ export function example3_ExpertEventPlanner(): GeneratedPrompt {
   console.log(`   Version: ${prompt.metadata.version}`)
   console.log('\n📝 Preview:')
   console.log(getPromptPreview(prompt))
-  console.log('\n✅ Prompt complet généré avec succès!\n')
+  console.log('\n[SUCCESS] Prompt complet généré avec succès!\n')
 
   return prompt
 }
@@ -259,7 +259,7 @@ Tu es méticuleux, analytique et tu sais rendre les chiffres compréhensibles po
   console.log(`   Version: ${prompt.metadata.version}`)
   console.log('\n📝 Preview:')
   console.log(getPromptPreview(prompt))
-  console.log('\n✅ Prompt spécialisé généré avec succès!\n')
+  console.log('\n[SUCCESS] Prompt spécialisé généré avec succès!\n')
 
   return prompt
 }
@@ -281,9 +281,9 @@ export function runValidationTests(): void {
       target_customers: 'Clients B2B'
     }
     validateUserContext(validContext)
-    console.log('✅ Test 1 passé: Contexte utilisateur valide')
+    console.log('[SUCCESS] Test 1 passé: Contexte utilisateur valide')
   } catch (error) {
-    console.error('❌ Test 1 échoué:', error)
+    console.error('[ERROR] Test 1 échoué:', error)
   }
 
   // Test 2: Invalid user context (missing target_customers)
@@ -293,26 +293,26 @@ export function runValidationTests(): void {
       target_customers: ''
     }
     validateUserContext(invalidContext)
-    console.error('❌ Test 2 échoué: Devrait rejeter un target_customers vide')
+    console.error('[ERROR] Test 2 échoué: Devrait rejeter un target_customers vide')
   } catch (error) {
-    console.log('✅ Test 2 passé: target_customers vide correctement rejeté')
+    console.log('[SUCCESS] Test 2 passé: target_customers vide correctement rejeté')
   }
 
   // Test 3: Valid sector
   try {
     validateSector(EVENEMENTIEL_SECTOR)
-    console.log('✅ Test 3 passé: Secteur valide')
+    console.log('[SUCCESS] Test 3 passé: Secteur valide')
   } catch (error) {
-    console.error('❌ Test 3 échoué:', error)
+    console.error('[ERROR] Test 3 échoué:', error)
   }
 
   // Test 4: Invalid sector (missing name)
   try {
     const invalidSector = { ...EVENEMENTIEL_SECTOR, name: '', slug: '' }
     validateSector(invalidSector)
-    console.error('❌ Test 4 échoué: Devrait rejeter un secteur sans nom')
+    console.error('[ERROR] Test 4 échoué: Devrait rejeter un secteur sans nom')
   } catch (error) {
-    console.log('✅ Test 4 passé: Secteur invalide correctement rejeté')
+    console.log('[SUCCESS] Test 4 passé: Secteur invalide correctement rejeté')
   }
 
   // Test 5: Missing template for specialized agent
@@ -328,9 +328,9 @@ export function runValidationTests(): void {
       // Missing template!
     }
     generateUniversalPrompt(configWithoutTemplate)
-    console.error('❌ Test 5 échoué: Devrait exiger un template pour agent spécialisé')
+    console.error('[ERROR] Test 5 échoué: Devrait exiger un template pour agent spécialisé')
   } catch (error) {
-    console.log('✅ Test 5 passé: Template manquant correctement détecté')
+    console.log('[SUCCESS] Test 5 passé: Template manquant correctement détecté')
   }
 
   console.log('\n=== FIN DES TESTS ===\n')

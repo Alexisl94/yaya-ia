@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles, MessageCircle } from 'lucide-react'
 import { SECTORS } from '@/lib/seed/sectors'
 import { generateUniversalPrompt } from '@/lib/ai/prompt-generator'
 import { getUser } from '@/lib/supabase/auth'
@@ -186,7 +186,7 @@ export function StepConfirmation() {
 
           {/* Agent Type */}
           <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-            <span className="text-2xl">{isCompanion ? '✨' : '🎯'}</span>
+            
             <div className="flex-1">
               <p className="font-medium text-slate-900">Type d'agent</p>
               <p className="text-sm text-slate-600">{isCompanion ? 'Assistant Compagnon' : 'Agent Tâche'}</p>
@@ -216,7 +216,7 @@ export function StepConfirmation() {
 
               {/* Task Goal */}
               <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-                <span className="text-2xl">🎯</span>
+                
                 <div className="flex-1">
                   <p className="font-medium text-slate-900">Objectif</p>
                   <p className="text-sm text-slate-600 whitespace-pre-line">{data.taskSpecificGoal}</p>
@@ -253,7 +253,7 @@ export function StepConfirmation() {
 
               {/* Project Size */}
               <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-                <span className="text-2xl">📦</span>
+                
                 <div className="flex-1">
                   <p className="font-medium text-slate-900">Taille de projets</p>
                   <p className="text-sm text-slate-600">
@@ -273,7 +273,7 @@ export function StepConfirmation() {
 
               {/* Main Challenges */}
               <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-                <span className="text-2xl">⚡</span>
+                
                 <div className="flex-1">
                   <p className="font-medium text-slate-900">Défis principaux</p>
                   <p className="text-sm text-slate-600 whitespace-pre-line">{data.mainChallenges}</p>
@@ -283,7 +283,7 @@ export function StepConfirmation() {
               {/* Primary Goals */}
               {data.primaryGoals.length > 0 && (
                 <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-                  <span className="text-2xl">🎯</span>
+                  
                   <div className="flex-1">
                     <p className="font-medium text-slate-900">Objectifs</p>
                     <ul className="text-sm text-slate-600 mt-1 space-y-1">
@@ -298,7 +298,7 @@ export function StepConfirmation() {
               {/* Business Values */}
               {data.businessValues && (
                 <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-                  <span className="text-2xl">💎</span>
+                  
                   <div className="flex-1">
                     <p className="font-medium text-slate-900">Valeurs</p>
                     <p className="text-sm text-slate-600 whitespace-pre-line">{data.businessValues}</p>
@@ -320,7 +320,7 @@ export function StepConfirmation() {
               {/* Specificities */}
               {data.specificities && (
                 <div className="flex items-start gap-3 pb-3 border-b border-slate-200">
-                  <span className="text-2xl">⭐</span>
+                  
                   <div className="flex-1">
                     <p className="font-medium text-slate-900">Spécificités</p>
                     <p className="text-sm text-slate-600 whitespace-pre-line">{data.specificities}</p>
@@ -343,7 +343,7 @@ export function StepConfirmation() {
 
           {/* Communication Style (both types) */}
           <div className="flex items-start gap-3">
-            <span className="text-2xl">💬</span>
+            <MessageCircle className="w-6 h-6 text-primary-600 mt-0.5" />
             <div className="flex-1">
               <p className="font-medium text-slate-900">Style de communication</p>
               <p className="text-sm text-slate-600">
@@ -368,7 +368,7 @@ export function StepConfirmation() {
             description={isTask ? data.taskDescription : data.businessName}
           />
           <p className="text-xs text-slate-500 mt-4">
-            💡 Vous pourrez le modifier plus tard dans les paramètres de l'agent
+            Vous pourrez le modifier plus tard dans les paramètres de l'agent
           </p>
         </CardContent>
       </Card>

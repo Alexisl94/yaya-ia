@@ -163,7 +163,7 @@ export function StepAgentType() {
       <Card className="bg-blue-50 border-blue-200 mt-8">
         <CardContent className="p-6">
           <p className="text-sm text-blue-900 text-center">
-            <strong>💡 Conseil :</strong> Commencez par créer votre <strong>Assistant Compagnon</strong> pour bénéficier de l'expérience la plus complète. Vous pourrez ensuite créer des agents tâches spécialisés pour des besoins spécifiques (prospection, facturation, réseaux sociaux, etc.).
+            <strong> Conseil :</strong> Commencez par créer votre <strong>Assistant Compagnon</strong> pour bénéficier de l'expérience la plus complète. Vous pourrez ensuite créer des agents tâches spécialisés pour des besoins spécifiques (prospection, facturation, réseaux sociaux, etc.).
           </p>
         </CardContent>
       </Card>

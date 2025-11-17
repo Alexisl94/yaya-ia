@@ -10,18 +10,29 @@ import { useOnboardingStore } from '@/lib/store/onboarding-store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Target, Heart, Briefcase, Check } from 'lucide-react'
+import { Target, Heart, Briefcase, Check, DollarSign, Clock, Star, ClipboardList, Rocket, Gem, Smile } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const GOAL_ICONS = {
+  increase_revenue: DollarSign,
+  save_time: Clock,
+  find_clients: Target,
+  improve_quality: Star,
+  better_organization: ClipboardList,
+  expand_offer: Rocket,
+  differentiate: Gem,
+  reduce_stress: Smile,
+}
+
 const COMMON_GOALS = [
-  { value: 'increase_revenue', label: 'Augmenter mon chiffre d\'affaires', icon: '💰' },
-  { value: 'save_time', label: 'Gagner du temps', icon: '⏱️' },
-  { value: 'find_clients', label: 'Trouver plus de clients', icon: '🎯' },
-  { value: 'improve_quality', label: 'Améliorer la qualité de service', icon: '⭐' },
-  { value: 'better_organization', label: 'Mieux m\'organiser', icon: '📋' },
-  { value: 'expand_offer', label: 'Développer mon offre', icon: '🚀' },
-  { value: 'differentiate', label: 'Me différencier', icon: '💎' },
-  { value: 'reduce_stress', label: 'Réduire le stress', icon: '🧘' }
+  { value: 'increase_revenue', label: 'Augmenter mon chiffre d\'affaires' },
+  { value: 'save_time', label: 'Gagner du temps' },
+  { value: 'find_clients', label: 'Trouver plus de clients' },
+  { value: 'improve_quality', label: 'Améliorer la qualité de service' },
+  { value: 'better_organization', label: 'Mieux m\'organiser' },
+  { value: 'expand_offer', label: 'Développer mon offre' },
+  { value: 'differentiate', label: 'Me différencier' },
+  { value: 'reduce_stress', label: 'Réduire le stress' }
 ]
 
 export function StepGoalsValues() {
@@ -87,7 +98,10 @@ export function StepGoalsValues() {
                 )}
                 <CardContent className="p-3">
                   <div className="flex flex-col items-center text-center space-y-2">
-                    <span className="text-2xl">{goal.icon}</span>
+                    {(() => {
+                      const Icon = GOAL_ICONS[goal.value as keyof typeof GOAL_ICONS]
+                      return Icon ? <Icon className="w-8 h-8 text-primary-600" /> : null
+                    })()}
                     <p className="font-medium text-xs leading-tight">{goal.label}</p>
                   </div>
                 </CardContent>
@@ -140,7 +154,7 @@ export function StepGoalsValues() {
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <p className="text-sm text-blue-900">
-              <strong>💡 Pourquoi ces informations ?</strong>
+              <strong> Pourquoi ces informations ?</strong>
               <br />
               Elles permettent à votre assistant de comprendre vos priorités et d'adapter ses conseils à votre réalité. Plus vous partagez de détails, plus l'assistance sera personnalisée et pertinente.
             </p>

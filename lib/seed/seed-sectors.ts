@@ -19,7 +19,7 @@ async function seedSectors() {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('❌ Missing Supabase environment variables!')
+    console.error('[ERROR] Missing Supabase environment variables!')
     console.error('Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local')
     process.exit(1)
   }
@@ -52,7 +52,7 @@ async function seedSectors() {
       .select()
 
     if (error) {
-      console.error('❌ Error seeding sectors:', error.message)
+      console.error('[ERROR] Error seeding sectors:', error.message)
       console.error('Details:', error)
       process.exit(1)
     }
@@ -68,7 +68,7 @@ async function seedSectors() {
     console.log('\n🎉 Seed completed successfully!')
 
   } catch (err) {
-    console.error('❌ Unexpected error:', err)
+    console.error('[ERROR] Unexpected error:', err)
     process.exit(1)
   }
 }
@@ -80,6 +80,6 @@ seedSectors()
     process.exit(0)
   })
   .catch((err) => {
-    console.error('❌ Fatal error:', err)
+    console.error('[ERROR] Fatal error:', err)
     process.exit(1)
   })

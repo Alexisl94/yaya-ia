@@ -27,7 +27,7 @@ export const MODELS: Record<ModelType, ModelInfo> = {
     id: 'haiku',
     name: 'Claude Haiku',
     displayName: 'Haiku',
-    emoji: '⚡',
+    emoji: '',
     tier: 'economy',
     costPer1kTokens: 0.004,
     speed: 5,
@@ -63,7 +63,7 @@ export const MODELS: Record<ModelType, ModelInfo> = {
     id: 'sonnet',
     name: 'Claude Sonnet',
     displayName: 'Sonnet',
-    emoji: '💎',
+    emoji: '',
     tier: 'standard',
     costPer1kTokens: 0.048,
     speed: 4,
@@ -87,7 +87,7 @@ export const MODELS: Record<ModelType, ModelInfo> = {
     id: 'claude',
     name: 'Claude (Legacy)',
     displayName: 'Claude',
-    emoji: '⚡',
+    emoji: '',
     tier: 'economy',
     costPer1kTokens: 0.004,
     speed: 5,
@@ -197,25 +197,21 @@ export function formatCostEUR(cost: number): string {
  */
 export function getCostBadgeColor(monthlyCost: number): {
   color: 'green' | 'yellow' | 'red'
-  emoji: string
   label: string
 } {
   if (monthlyCost < 5) {
     return {
       color: 'green',
-      emoji: '🟢',
       label: 'Économique'
     }
   } else if (monthlyCost < 20) {
     return {
       color: 'yellow',
-      emoji: '🟡',
       label: 'Modéré'
     }
   } else {
     return {
       color: 'red',
-      emoji: '🔴',
       label: 'Coûteux'
     }
   }

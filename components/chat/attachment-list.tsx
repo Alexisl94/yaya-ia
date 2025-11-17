@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Eye, Trash2, FileText, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { Eye, Trash2, FileText, Image as ImageIcon, Loader2, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { AttachmentPreview } from './attachment-preview'
@@ -121,8 +121,9 @@ export function AttachmentList({ conversationId, onAttachmentDeleted }: Attachme
     <>
       <Card className="p-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-sm">
-            📎 Fichiers ({attachments.length})
+          <h3 className="font-semibold text-sm flex items-center gap-2">
+            <Paperclip className="w-4 h-4 text-slate-600" />
+            Fichiers ({attachments.length})
           </h3>
         </div>
 
