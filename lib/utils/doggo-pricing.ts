@@ -1,7 +1,8 @@
 /**
  * Doggo Pricing System
  * Système de tarification simplifié et gamifié
- * 1 Doggo = 5€ de consommation de tokens (tous LLM confondus)
+ * Budget mensuel : 10 000 Doggos = 5€ maximum de consommation de tokens
+ * Donc 1 Doggo = 0.0005€ de consommation de tokens (tous LLM confondus)
  */
 
 import type { ModelType } from '@/types/database'
@@ -13,14 +14,14 @@ import type { ModelType } from '@/types/database'
 /** Prix de l'abonnement mensuel en EUR */
 export const SUBSCRIPTION_PRICE_EUR = 10
 
-/** 1 Doggo = 5€ de tokens consommés */
-export const DOGGO_VALUE_EUR = 5
+/** 1 Doggo = 0.0005€ de tokens consommés (10000 Doggos = 5€) */
+export const DOGGO_VALUE_EUR = 0.0005
 
-/** 1 Doggo = 5.26$ (approximation 1 EUR = 1.053 USD) */
-export const DOGGO_VALUE_USD = 5.26
+/** 1 Doggo = 0.000526$ (approximation 1 EUR = 1.053 USD) */
+export const DOGGO_VALUE_USD = 0.000526
 
-/** Limite par défaut : 1 Doggo */
-export const DEFAULT_DOGGO_LIMIT = 1
+/** Limite par défaut : 10000 Doggos (équivalent à 5€ de tokens) */
+export const DEFAULT_DOGGO_LIMIT = 10000
 
 // ==============================================
 // CONSUMPTION LEVELS
