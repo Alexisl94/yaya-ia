@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       name,
       sector_id: finalSectorId,
-      business_profile_id: businessProfileId,
+      business_profile_id: businessProfileId || undefined,
       system_prompt,
       model: model || 'claude',
       agent_type: agent_type || 'companion',

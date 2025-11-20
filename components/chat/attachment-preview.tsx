@@ -200,13 +200,13 @@ export function AttachmentPreview({ attachment, onClose }: AttachmentPreviewProp
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-lg mb-1">
-                  {attachment.metadata?.title || attachment.file_name}
+                  {(attachment.metadata?.title as string) || attachment.file_name}
                 </h4>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-slate-600">
                     Page web scrapée • {formatFileSize(attachment.file_size)}
                   </p>
-                  {attachment.metadata?.source_url && (
+                  {(attachment.metadata?.source_url as string) && (
                     <>
                       <span className="text-slate-300">•</span>
                       <a
@@ -221,7 +221,7 @@ export function AttachmentPreview({ attachment, onClose }: AttachmentPreviewProp
                     </>
                   )}
                 </div>
-                {attachment.metadata?.scraped_at && (
+                {(attachment.metadata?.scraped_at as string) && (
                   <p className="text-xs text-slate-500 mt-1">
                     Scrapé le {new Date(attachment.metadata.scraped_at as string).toLocaleDateString('fr-FR')}
                   </p>

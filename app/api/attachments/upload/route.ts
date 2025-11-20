@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     let extractedText: string | null = null
     let thumbnailPath: string | null = null
     let metadata: Record<string, any> = {}
-    let processedBuffer = fileBuffer
+    let processedBuffer: Buffer = fileBuffer
 
     const isImage = file.type.startsWith('image/')
     const isPDF = file.type === 'application/pdf'
@@ -161,8 +161,8 @@ export async function POST(request: NextRequest) {
       file_type: file.type,
       file_size: processedBuffer.length,
       storage_path: storagePath,
-      extracted_text: extractedText,
-      thumbnail_path: thumbnailPath,
+      extracted_text: extractedText || undefined,
+      thumbnail_path: thumbnailPath || undefined,
       metadata
     })
 

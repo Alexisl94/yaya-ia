@@ -36,6 +36,7 @@ import {
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getAvailableModels, getModelById, formatCurrency } from '@/lib/pricing/model-pricing'
+import type { AgentWithRelations } from '@/types/database'
 
 const AGENT_NAME_REGEX = /^[a-zA-Z0-9_-]*$/
 const MIN_NAME_LENGTH = 3
@@ -121,7 +122,7 @@ export function ChatArea() {
       }
 
       // Update local store
-      updateAgent(selectedAgentId, editedAgent)
+      updateAgent(selectedAgentId, editedAgent as Partial<AgentWithRelations>)
       toast.success('Agent mis à jour avec succès')
       setAgentSettingsOpen(false)
     } catch (error) {

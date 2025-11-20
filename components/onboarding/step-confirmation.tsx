@@ -364,8 +364,8 @@ export function StepConfirmation() {
             value={agentName}
             onChange={setAgentNameLocal}
             agentType={data.agentType as 'companion' | 'task'}
-            sectorName={data.sectorName}
-            description={isTask ? data.taskDescription : data.businessName}
+            sectorName={data.sectorName || undefined}
+            description={(isTask ? data.taskDescription : data.businessName) || undefined}
           />
           <p className="text-xs text-slate-500 mt-4">
             Vous pourrez le modifier plus tard dans les paramètres de l'agent

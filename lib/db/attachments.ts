@@ -145,7 +145,7 @@ export async function getConversationAttachments(
   conversationId: string
 ): Promise<DatabaseResult<ConversationAttachment[]>> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { data, error } = await supabase
       .from('conversation_attachments')
@@ -187,7 +187,7 @@ export async function getMessageAttachments(
   messageId: string
 ): Promise<DatabaseResult<ConversationAttachment[]>> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { data, error } = await supabase
       .from('conversation_attachments')
@@ -231,7 +231,7 @@ export async function updateAttachment(
   input: UpdateAttachmentInput
 ): Promise<DatabaseResult<ConversationAttachment>> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { data, error } = await supabase
       .from('conversation_attachments')
@@ -275,7 +275,7 @@ export async function deleteAttachment(
   attachmentId: string
 ): Promise<DatabaseResult<void>> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { error } = await supabase
       .from('conversation_attachments')

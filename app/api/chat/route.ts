@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         if (result.success && result.data) {
           attachments.push(result.data)
           console.log(`[SUCCESS] Fetched attachment: ${result.data.file_name}, extracted_text length: ${result.data.extracted_text?.length || 0}`)
-        } else {
+        } else if (!result.success) {
           console.error(`[ERROR] Failed to fetch attachment ${attachmentId}:`, result.error)
         }
       }
