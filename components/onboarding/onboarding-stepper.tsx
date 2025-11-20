@@ -39,7 +39,7 @@ export function OnboardingStepper({ currentStep }: OnboardingStepperProps) {
   // Determine which steps to show
   const steps = isTaskAgent() ? taskSteps : companionSteps
   return (
-    <div className="w-full py-6">
+    <div className="w-full py-4">
       <div className="flex items-center justify-between max-w-2xl mx-auto">
         {steps.map((step, index) => (
           <div key={step.number} className="flex items-center flex-1">
@@ -47,19 +47,19 @@ export function OnboardingStepper({ currentStep }: OnboardingStepperProps) {
             <div className="flex flex-col items-center relative">
               <div
                 className={`
-                  w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm
-                  transition-all duration-300
+                  w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs
+                  transition-all duration-200
                   ${
                     currentStep > step.number
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-amber-500 text-white'
                       : currentStep === step.number
-                      ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
-                      : 'bg-slate-200 text-slate-500'
+                      ? 'bg-amber-500 text-white ring-2 ring-amber-200'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200'
                   }
                 `}
               >
                 {currentStep > step.number ? (
-                  <Check className="w-5 h-5" />
+                  <Check className="w-4 h-4" />
                 ) : (
                   step.number
                 )}
@@ -68,10 +68,10 @@ export function OnboardingStepper({ currentStep }: OnboardingStepperProps) {
               {/* Step title */}
               <span
                 className={`
-                  mt-2 text-xs font-medium absolute top-12 whitespace-nowrap
+                  mt-1.5 text-[10px] font-medium absolute top-9 whitespace-nowrap
                   ${
                     currentStep >= step.number
-                      ? 'text-slate-900'
+                      ? 'text-slate-700'
                       : 'text-slate-400'
                   }
                 `}
@@ -82,13 +82,13 @@ export function OnboardingStepper({ currentStep }: OnboardingStepperProps) {
 
             {/* Connector line */}
             {index < steps.length - 1 && (
-              <div className="flex-1 h-1 mx-2 mb-8">
+              <div className="flex-1 h-0.5 mx-1.5 mb-6">
                 <div
                   className={`
-                    h-full transition-all duration-300
+                    h-full transition-all duration-200
                     ${
                       currentStep > step.number
-                        ? 'bg-primary'
+                        ? 'bg-amber-500'
                         : 'bg-slate-200'
                     }
                   `}

@@ -9,7 +9,7 @@ import { useChatStore } from '@/lib/store/chat-store'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Bot, History, ChevronRight, Sparkles, BarChart3, Home } from 'lucide-react'
+import { Plus, Bot, History, ChevronRight, Sparkles, LayoutGrid, MessageSquare, Settings } from 'lucide-react'
 import { AgentCard } from './agent-card'
 import { AgentSkeleton } from './loading-states'
 import { cn } from '@/lib/utils'
@@ -39,25 +39,35 @@ export function ChatSidebar() {
     <div className="flex h-full flex-col">
       {/* Navigation Links */}
       <div className="border-b p-2">
-        <div className="grid grid-cols-2 gap-1.5">
-          <Link href="/">
+        <div className="space-y-1">
+          <Link href="/chat">
             <Button
               variant="ghost"
               size="sm"
               className="w-full justify-start text-xs h-9"
             >
-              <Home className="h-3.5 w-3.5 mr-2" />
-              Accueil
+              <MessageSquare className="h-3.5 w-3.5 mr-2" />
+              Chat
             </Button>
           </Link>
-          <Link href="/dashboard">
+          <Link href="/agents">
             <Button
               variant="ghost"
               size="sm"
               className="w-full justify-start text-xs h-9"
             >
-              <BarChart3 className="h-3.5 w-3.5 mr-2" />
-              Dashboard
+              <LayoutGrid className="h-3.5 w-3.5 mr-2" />
+              Mes Agents
+            </Button>
+          </Link>
+          <Link href="/settings">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-xs h-9"
+            >
+              <Settings className="h-3.5 w-3.5 mr-2" />
+              Paramètres
             </Button>
           </Link>
         </div>

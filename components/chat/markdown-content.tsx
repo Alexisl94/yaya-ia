@@ -61,13 +61,13 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
 
         // Lists
         ul: ({ node, ...props }) => (
-          <ul className="list-disc list-inside mb-0.5 space-y-0" {...props} />
+          <ul className="list-disc list-outside ml-4 mb-0.5 space-y-0" {...props} />
         ),
         ol: ({ node, ...props }) => (
-          <ol className="list-decimal list-inside mb-0.5 space-y-0" {...props} />
+          <ol className="list-decimal list-outside ml-4 mb-0.5 space-y-0" {...props} />
         ),
         li: ({ node, ...props }) => (
-          <li className="text-[13px] leading-[20px] text-foreground" {...props} />
+          <li className="text-[13px] leading-[20px] text-foreground pl-1" {...props} />
         ),
 
         // Code blocks

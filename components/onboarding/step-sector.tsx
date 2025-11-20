@@ -20,17 +20,17 @@ export function StepSector() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">
-          Quel est votre secteur d'activité ?
+      <div className="text-center max-w-2xl mx-auto space-y-2">
+        <h2 className="text-xl font-semibold text-slate-900">
+          Votre secteur d'activité
         </h2>
-        <p className="text-slate-600">
-          Sélectionnez le domaine qui correspond le mieux à votre activité professionnelle
+        <p className="text-sm text-slate-600">
+          Sélectionnez votre domaine professionnel
         </p>
       </div>
 
       {/* Sector Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
         {SECTORS.map((sector) => (
           <SectorCard
             key={sector.slug}

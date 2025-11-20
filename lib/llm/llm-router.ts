@@ -10,15 +10,21 @@ import type { UnifiedMessage } from './openai-client'
 
 /**
  * Model to provider mapping
+ * Supports both short names (haiku, sonnet, opus) and full model IDs
  */
 const MODEL_PROVIDERS = {
-  // Anthropic models
+  // Anthropic models - short names
   'haiku': 'anthropic',
   'sonnet': 'anthropic',
   'opus': 'anthropic',
   'claude': 'anthropic',
 
-  // OpenAI models
+  // Anthropic models - full IDs (from model-pricing.ts)
+  'claude-3-haiku-20240307': 'anthropic',
+  'claude-3-sonnet-20240229': 'anthropic',
+  'claude-3-opus-20240229': 'anthropic',
+
+  // OpenAI models - short names and full IDs
   'gpt-4o-mini': 'openai',
   'gpt-4o': 'openai',
   'gpt': 'openai',
@@ -26,15 +32,21 @@ const MODEL_PROVIDERS = {
 
 /**
  * Model to actual model ID mapping
+ * Maps short names to full IDs, full IDs pass through
  */
 const MODEL_IDS = {
-  // Anthropic
+  // Anthropic - short names to full IDs
   'haiku': 'claude-3-haiku-20240307',
-  'sonnet': 'claude-3-5-sonnet-20241022',
+  'sonnet': 'claude-3-sonnet-20240229', // Fixed: match model-pricing.ts
   'opus': 'claude-3-opus-20240229',
   'claude': 'claude-3-haiku-20240307', // Legacy fallback
 
-  // OpenAI
+  // Anthropic - full IDs pass through
+  'claude-3-haiku-20240307': 'claude-3-haiku-20240307',
+  'claude-3-sonnet-20240229': 'claude-3-sonnet-20240229',
+  'claude-3-opus-20240229': 'claude-3-opus-20240229',
+
+  // OpenAI - full IDs pass through
   'gpt-4o-mini': 'gpt-4o-mini',
   'gpt-4o': 'gpt-4o',
   'gpt': 'gpt-4o-mini', // Default to mini for 'gpt'
@@ -44,9 +56,20 @@ type ModelType = keyof typeof MODEL_PROVIDERS
 
 /**
  * Determine which provider to use for a given model
+ * Falls back to auto-detection based on model ID prefix
  */
 function getProvider(model: string): 'anthropic' | 'openai' {
-  return MODEL_PROVIDERS[model as ModelType] || 'anthropic'
+  // Try exact match first
+  const provider = MODEL_PROVIDERS[model as ModelType]
+  if (provider) return provider
+
+  // Auto-detect from model ID
+  if (model.startsWith('gpt-') || model.startsWith('gpt')) return 'openai'
+  if (model.startsWith('claude-')) return 'anthropic'
+
+  // Default fallback
+  console.warn(`[LLM] Unknown model "${model}", defaulting to anthropic`)
+  return 'anthropic'
 }
 
 /**

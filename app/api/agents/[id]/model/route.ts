@@ -36,9 +36,11 @@ export async function PATCH(
       )
     }
 
-    // Validate model
+    // Validate model (support both short names and full IDs for backward compatibility)
     const validModels: ModelType[] = ['haiku', 'gpt-4o-mini', 'gpt-4o', 'sonnet', 'opus', 'claude', 'gpt']
-    if (!validModels.includes(model)) {
+    const validFullIds = ['claude-3-haiku-20240307', 'claude-3-sonnet-20240229', 'claude-3-opus-20240229']
+
+    if (!validModels.includes(model) && !validFullIds.includes(model)) {
       return NextResponse.json(
         { success: false, error: 'Modèle invalide' },
         { status: 400 }

@@ -20,8 +20,10 @@ export function StepLLMSelection() {
   // Get all available Claude models (sorted by cost)
   const availableModels = getAvailableModels()
 
-  const handleSelectModel = (modelId: string) => {
-    setSelectedLLM(modelId)
+  const handleSelectModel = (modelName: string) => {
+    // Save the short model name (e.g., 'haiku', 'gpt-4o') instead of full ID
+    // This ensures consistency with ModelSettingsModal and the rest of the app
+    setSelectedLLM(modelName)
   }
 
   const handleContinue = () => {
@@ -29,87 +31,88 @@ export function StepLLMSelection() {
     nextStep()
   }
 
-  // Get simple model label
-  const getSimpleLabel = (model: ModelConfig) => {
-    if (model.name === 'haiku') return 'Rapide & Économique'
-    if (model.name === 'sonnet') return 'Équilibré'
-    if (model.name === 'opus') return 'Puissant'
-    return 'Standard'
+  // Get model display name
+  const getModelName = (model: ModelConfig) => {
+    if (model.name === 'haiku') return 'Claude 3.5 Haiku'
+    if (model.name === 'sonnet') return 'Claude 3.5 Sonnet'
+    if (model.name === 'opus') return 'Claude 3 Opus'
+    return model.displayName
   }
 
-  // Get simple description
-  const getSimpleDescription = (model: ModelConfig) => {
-    if (model.name === 'haiku') return 'Parfait pour un usage quotidien'
-    if (model.name === 'sonnet') return 'Le meilleur compromis qualité/prix'
-    if (model.name === 'opus') return 'Performance maximale'
-    return 'Pour tous vos besoins'
+  // Get model description
+  const getModelDescription = (model: ModelConfig) => {
+    if (model.name === 'haiku') return 'Rapide et économique'
+    if (model.name === 'sonnet') return 'Équilibré et performant'
+    if (model.name === 'opus') return 'Puissance maximale'
+    return model.description
   }
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
-      {/* Header - Plus simple */}
-      <div className="text-center space-y-3">
-        <h2 className="text-2xl font-bold text-slate-900">
-          Choisissez votre modèle IA
+    <div className="space-y-6 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <h2 className="text-xl font-semibold text-slate-900">
+          Choisissez votre modèle
         </h2>
-        <p className="text-slate-600">
-          Sélectionnez le modèle qui vous convient
+        <p className="text-sm text-slate-600">
+          Sélectionnez le modèle qui correspond à vos besoins
         </p>
       </div>
 
-      {/* Model Cards - Design épuré */}
-      <div className="space-y-3">
+      {/* Model Cards */}
+      <div className="space-y-2">
         {availableModels.map((model) => {
-          const isSelected = data.selectedLLM === model.id
+          const isSelected = data.selectedLLM === model.name
           const isRecommended = model.recommended
           const consumption = getModelConsumption(model.name as ModelType)
 
           return (
             <Card
               key={model.id}
-              onClick={() => handleSelectModel(model.id)}
+              onClick={() => handleSelectModel(model.name)}
               className={cn(
-                'cursor-pointer transition-all duration-200 hover:shadow-md relative',
-                'border-2',
+                'cursor-pointer transition-all duration-200',
+                'border',
                 isSelected
-                  ? 'border-primary bg-primary/5 shadow-md'
-                  : 'hover:border-slate-300 border-slate-200'
+                  ? 'border-amber-500 bg-amber-50/50 shadow-sm'
+                  : 'hover:border-slate-300 border-slate-200 hover:bg-slate-50'
               )}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
                   {/* Selection Indicator */}
                   <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0",
                     isSelected
-                      ? "border-primary bg-primary"
+                      ? "border-amber-500 bg-amber-500"
                       : "border-slate-300"
                   )}>
                     {isSelected && (
-                      <CheckCircle className="w-4 h-4 text-white" />
+                      <div className="w-2 h-2 rounded-full bg-white" />
                     )}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-slate-900">
-                        {getSimpleLabel(model)}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-medium text-slate-900">
+                        {getModelName(model)}
                       </h3>
                       {isRecommended && (
-                        <span className="bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded">
+                        <span className="bg-amber-100 text-amber-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
                           Recommandé
                         </span>
                       )}
+                      <span className="text-xs text-slate-500">
+                        · {getModelDescription(model)}
+                      </span>
                     </div>
-                    <p className="text-sm text-slate-600">
-                      {getSimpleDescription(model)}
-                    </p>
                   </div>
 
-                  {/* Doggo Icon - Discret */}
-                  <div className="flex items-center gap-2 flex-shrink-0 bg-slate-50 px-3 py-2 rounded-lg">
-                    <span className="text-2xl">{consumption.icon}</span>
+                  {/* Doggo Icon */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0 text-xs text-slate-600">
+                    <span className="text-base">{consumption.icon}</span>
+                    <span className="hidden sm:inline">{consumption.label}</span>
                   </div>
                 </div>
               </CardContent>
@@ -118,32 +121,29 @@ export function StepLLMSelection() {
         })}
       </div>
 
-      {/* Info Box - Simplifié */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex gap-3">
-          <span className="text-xl">💡</span>
-          <p className="text-sm text-blue-900">
-            Chaque mois : <strong>10 000 Doggos</strong> gratuits.
-            Les modèles 🐕 consomment peu, 🦮 moyen, 🐺 plus.
-            <span className="block mt-1 text-blue-700">Vous pouvez changer de modèle à tout moment.</span>
-          </p>
-        </div>
+      {/* Info Box */}
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+        <p className="text-xs text-blue-900 leading-relaxed">
+          <strong>10 000 Doggos offerts</strong> chaque mois. Vous pouvez changer de modèle à tout moment.
+        </p>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <Button
           type="button"
           variant="outline"
           onClick={prevStep}
           className="flex-1"
+          size="sm"
         >
           Retour
         </Button>
         <Button
           onClick={handleContinue}
           disabled={!data.selectedLLM}
-          className="flex-1"
+          className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+          size="sm"
         >
           Continuer
         </Button>

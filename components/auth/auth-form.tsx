@@ -50,8 +50,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           return
         }
 
-        // Redirect to onboarding after successful signup
-        router.push('/onboarding')
+        // Redirect to chat after successful signup
+        router.push('/chat')
+        router.refresh()
       } else {
         // Login flow
         const result = await signIn({

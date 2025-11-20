@@ -1,20 +1,15 @@
-/**
- * Agents Management Page
- * View and manage all AI agents
- */
-
-import { getUserServer } from '@/lib/supabase/auth-server'
 import { redirect } from 'next/navigation'
-import { AgentsPageClient } from './agents-page-client'
+import { getUserServer } from '@/lib/supabase/auth-server'
+import { SettingsClient } from './settings-client'
 import { ChatLayout } from '@/components/layouts/chat-layout'
 import { ChatSidebar } from '@/components/chat/sidebar'
 
 export const metadata = {
-  title: 'Mes Agents | Doggo',
-  description: 'Gérez vos assistants IA',
+  title: 'Paramètres | Doggo',
+  description: 'Gérez vos paramètres et préférences',
 }
 
-export default async function AgentsPage() {
+export default async function SettingsPage() {
   const user = await getUserServer()
 
   if (!user) {
@@ -23,7 +18,7 @@ export default async function AgentsPage() {
 
   return (
     <ChatLayout sidebar={<ChatSidebar />}>
-      <AgentsPageClient userId={user.id} />
+      <SettingsClient userId={user.id} userEmail={user.email || ''} />
     </ChatLayout>
   )
 }

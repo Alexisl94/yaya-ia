@@ -62,20 +62,20 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header with Cancel Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Créer un nouvel agent</h1>
-          <p className="text-sm text-slate-600 mt-1">Configurez votre assistant IA personnalisé</p>
+          <h1 className="text-xl font-semibold text-slate-900">Créer un nouvel agent</h1>
+          <p className="text-xs text-slate-600 mt-0.5">Configurez votre assistant IA personnalisé</p>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleCancel}
-          className="text-slate-500 hover:text-slate-700"
+          className="text-slate-500 hover:text-slate-700 h-8"
         >
-          <X className="w-4 h-4 mr-2" />
+          <X className="w-4 h-4 mr-1.5" />
           Annuler
         </Button>
       </div>
@@ -84,7 +84,7 @@ export default function OnboardingPage() {
       <OnboardingStepper currentStep={currentStep} />
 
       {/* Step Content */}
-      <div className="bg-white rounded-xl shadow-sm p-8 min-h-[500px]">
+      <div className="bg-white rounded-lg border border-slate-200 p-6">
         {renderStep()}
       </div>
     </div>

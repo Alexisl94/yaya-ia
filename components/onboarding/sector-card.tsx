@@ -29,45 +29,35 @@ export function SectorCard({
     <Card
       onClick={onClick}
       className={`
-        relative cursor-pointer transition-all duration-200 hover:shadow-lg
+        relative cursor-pointer transition-all duration-200 hover:shadow-md border-2
         ${isSelected
-          ? 'ring-2 ring-offset-2 shadow-lg'
-          : 'hover:scale-105'
+          ? 'border-amber-500 bg-amber-50/50 shadow-sm'
+          : 'border-slate-200 hover:border-slate-300'
         }
       `}
-      style={{
-        borderColor: isSelected ? color : undefined,
-        '--ring-color': color
-      } as React.CSSProperties}
     >
       {isSelected && (
         <div
-          className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white z-10"
-          style={{ backgroundColor: color }}
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white z-10 bg-amber-500"
         >
-          <Check className="w-4 h-4" />
+          <Check className="w-3 h-3" />
         </div>
       )}
 
-      <CardContent className="p-6">
-        <div className="flex flex-col items-center text-center space-y-3">
+      <CardContent className="p-3">
+        <div className="flex flex-col items-center text-center space-y-2">
           {/* Icon */}
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
             style={{ backgroundColor: `${color}20` }}
           >
             {icon}
           </div>
 
           {/* Name */}
-          <h3 className="font-semibold text-lg text-slate-900">
+          <h3 className="font-medium text-sm text-slate-900">
             {name}
           </h3>
-
-          {/* Description */}
-          <p className="text-sm text-slate-600 line-clamp-2">
-            {description}
-          </p>
         </div>
       </CardContent>
     </Card>
