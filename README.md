@@ -110,3 +110,4 @@ Le déploiement sur Vercel est automatique depuis la branche `main`.
 - [ ] Ajouter la gestion des abonnements Stripe
 - [ ] Créer les pages d'onboarding
 - [ ] Implémenter le dashboard utilisateur
+# Build 1763665251
