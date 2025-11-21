@@ -6,10 +6,17 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { MessageParam, MessageCreateParams } from '@anthropic-ai/sdk/resources/messages'
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+// Lazy initialization to avoid build-time errors
+let anthropicInstance: Anthropic | null = null
+
+function getAnthropicClient(): Anthropic {
+  if (!anthropicInstance) {
+    anthropicInstance = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    })
+  }
+  return anthropicInstance
+}
 
 /**
  * Send a message to Claude and get a response
@@ -28,6 +35,7 @@ export async function sendMessage(
   }
 ) {
   try {
+    const anthropic = getAnthropicClient()
     const response = await anthropic.messages.create({
       model: options?.model || 'claude-3-haiku-20240307',
       max_tokens: options?.maxTokens || 4096,
@@ -71,6 +79,7 @@ export async function* streamMessage(
   }
 ) {
   try {
+    const anthropic = getAnthropicClient()
     const stream = await anthropic.messages.create({
       model: options?.model || 'claude-3-5-sonnet-20241022',
       max_tokens: options?.maxTokens || 4096,

@@ -6,10 +6,17 @@
 import OpenAI from 'openai'
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Lazy initialization to avoid build-time errors
+let openaiInstance: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiInstance) {
+    openaiInstance = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openaiInstance
+}
 
 /**
  * Message format compatible with both providers
@@ -48,6 +55,7 @@ export async function sendMessage(
       })),
     ]
 
+    const openai = getOpenAIClient()
     const response = await openai.chat.completions.create({
       model: options?.model || 'gpt-4o-mini',
       messages: openaiMessages,
@@ -105,6 +113,7 @@ export async function* streamMessage(
       })),
     ]
 
+    const openai = getOpenAIClient()
     const stream = await openai.chat.completions.create({
       model: options?.model || 'gpt-4o-mini',
       messages: openaiMessages,
