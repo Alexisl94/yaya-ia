@@ -1,0 +1,23 @@
+{
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
+    "ANTHROPIC_API_KEY": "@anthropic-api-key",
+    "OPENAI_API_KEY": "@openai-api-key",
+    "SERPAPI_API_KEY": "@serpapi-key",
+    "STRIPE_SECRET_KEY": "@stripe-secret-key",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@stripe-publishable-key",
+    "STRIPE_WEBHOOK_SECRET": "@stripe-webhook-secret",
+    "STRIPE_PRICE_PRO_MONTHLY": "@stripe-price-pro-monthly",
+    "STRIPE_PRICE_PRO_YEARLY": "@stripe-price-pro-yearly",
+    "STRIPE_PRICE_ENTERPRISE_MONTHLY": "@stripe-price-enterprise-monthly",
+    "STRIPE_PRICE_ENTERPRISE_YEARLY": "@stripe-price-enterprise-yearly",
+    "NODE_ENV": "production"
+  }
+}

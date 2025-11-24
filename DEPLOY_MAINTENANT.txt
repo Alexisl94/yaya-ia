@@ -1,0 +1,127 @@
+╔═══════════════════════════════════════════════════════════════╗
+║         🚀 DÉPLOYER yaya.ia SUR VERCEL MAINTENANT            ║
+║                      (2 MINUTES)                              ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📍 VOUS ÊTES ICI : /home/alexis/code/iaproject/yaya-ia
+✅ Serveur local : http://localhost:3000 (en cours)
+✅ Code GitHub : https://github.com/Alexisl94/yaya-ia
+
+═══════════════════════════════════════════════════════════════
+
+OPTION 1 : VIA L'INTERFACE VERCEL (LE PLUS SIMPLE)
+═══════════════════════════════════════════════════════════════
+
+Étape 1 : Ouvrez votre navigateur
+→ https://vercel.com
+
+Étape 2 : Connectez-vous avec GitHub
+→ Cliquez sur "Continue with GitHub"
+
+Étape 3 : Importez le projet
+→ Cliquez sur "Add New..." → "Project"
+→ Cherchez "yaya-ia"
+→ Cliquez sur "Import"
+
+Étape 4 : Configuration (IMPORTANT !)
+→ Framework Preset: Next.js ✓ (automatique)
+→ Root Directory: ./ ✓ (automatique)
+
+→ Cliquez sur "Environment Variables"
+→ Copiez TOUTES les variables depuis :
+   /home/alexis/code/iaproject/yaya-ia/.env.local
+
+   Variables à copier :
+   - NEXT_PUBLIC_SUPABASE_URL
+   - NEXT_PUBLIC_SUPABASE_ANON_KEY
+   - SUPABASE_SERVICE_ROLE_KEY
+   - ANTHROPIC_API_KEY
+   - OPENAI_API_KEY
+   - SERPAPI_API_KEY
+   - STRIPE_SECRET_KEY
+   - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+   - STRIPE_WEBHOOK_SECRET
+   - STRIPE_PRICE_PRO_MONTHLY
+   - STRIPE_PRICE_PRO_YEARLY
+   - STRIPE_PRICE_ENTERPRISE_MONTHLY
+   - STRIPE_PRICE_ENTERPRISE_YEARLY
+   - NODE_ENV=production
+
+Étape 5 : Déployez !
+→ Cliquez sur "Deploy"
+→ Attendez 2-3 minutes
+→ ✅ VOTRE APP EST EN LIGNE !
+
+═══════════════════════════════════════════════════════════════
+
+OPTION 2 : VIA LA LIGNE DE COMMANDE
+═══════════════════════════════════════════════════════════════
+
+Ouvrez un NOUVEAU terminal et exécutez :
+
+cd /home/alexis/code/iaproject/yaya-ia
+vercel login
+
+→ Une page web va s'ouvrir
+→ Connectez-vous avec GitHub
+→ Revenez au terminal
+
+Puis :
+
+vercel --prod
+
+→ Répondez aux questions :
+  • Set up and deploy? → Yes
+  • Which scope? → Choisissez votre compte
+  • Link to existing project? → No
+  • Project name? → yaya-ia
+  • Directory? → ./
+  • Override settings? → No
+
+→ Attendez le build...
+→ ✅ URL de production affichée !
+
+═══════════════════════════════════════════════════════════════
+
+APRÈS LE DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════
+
+1. Notez l'URL de production (ex: https://yaya-ia-xxx.vercel.app)
+
+2. Ajoutez NEXT_PUBLIC_APP_URL dans Vercel :
+   → Dashboard > Settings > Environment Variables
+   → NEXT_PUBLIC_APP_URL=https://votre-url.vercel.app
+   → Redéployer
+
+3. Configurez Supabase :
+   → https://supabase.com/dashboard/project/mzolqvxmdgbwonigsdoz
+   → Authentication > URL Configuration
+   → Site URL: https://votre-url.vercel.app
+   → Redirect URLs: https://votre-url.vercel.app/auth/callback
+
+4. Testez !
+   → Ouvrez l'URL de production
+   → Créez un compte
+   → Testez la création d'agent
+   → Testez le chat
+
+═══════════════════════════════════════════════════════════════
+
+BESOIN D'AIDE ?
+═══════════════════════════════════════════════════════════════
+
+Guide détaillé : cat DEPLOYMENT_GUIDE.md
+Guide rapide : cat DEPLOY_NOW.md
+Configuration Stripe : cat STRIPE_SETUP.md
+
+═══════════════════════════════════════════════════════════════
+
+🎯 RECOMMENDATION : Utilisez l'OPTION 1 (interface web)
+   C'est plus visuel et plus simple pour la première fois.
+
+💡 Le déploiement prend ~2-3 minutes
+   Vous verrez le build en temps réel
+
+🎉 Une fois déployé, votre app sera accessible partout !
+
+═══════════════════════════════════════════════════════════════
