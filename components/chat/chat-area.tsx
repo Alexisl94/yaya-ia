@@ -14,7 +14,7 @@ import { MessageInput } from './message-input'
 import { TypingIndicator } from './loading-states'
 import { AgentNameInput } from './agent-name-input'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -67,9 +67,20 @@ export function ChatArea() {
   } | null>(null)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
+  // Ref for messages container to auto-scroll
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+
   const agent = getCurrentAgent()
   const messages = getCurrentMessages()
   const conversations = selectedAgentId ? getAgentConversations(selectedAgentId) : []
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages.length, messages])
 
   // Get agent type from settings (fallback for PostgREST cache issues)
   const agentType = agent ? ((agent.settings as any)?.agentType || agent.agent_type || 'companion') : 'companion'
@@ -194,34 +205,34 @@ export function ChatArea() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-xl">
+      <div className="flex items-center justify-between border-b px-3 md:px-6 py-3 md:py-4 animate-slide-down">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-primary/10 text-lg md:text-xl shrink-0">
             {agent.name.charAt(0)}
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="font-semibold">{agent.name}</h2>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 md:gap-2 mb-0.5 md:mb-1 flex-wrap">
+              <h2 className="font-semibold text-sm md:text-base truncate">{agent.name}</h2>
               {/* Agent Type Badge */}
               <span className={cn(
-                "px-2 py-0.5 text-[10px] font-semibold rounded-full",
+                "px-1.5 md:px-2 py-0.5 text-[9px] md:text-[10px] font-semibold rounded-full shrink-0",
                 agentType === 'companion'
-                  ? "bg-amber-100 text-amber-700 border border-amber-300"
-                  : "bg-purple-100 text-purple-700 border border-purple-300"
+                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700"
+                  : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-700"
               )}>
                 {agentType === 'companion' ? 'COMPAGNON' : 'TÂCHE'}
               </span>
-              {/* LLM Badge */}
+              {/* LLM Badge - Hidden on very small screens */}
               <span className={cn(
-                "px-2 py-0.5 text-[10px] font-semibold rounded-full",
+                "hidden sm:inline-block px-1.5 md:px-2 py-0.5 text-[9px] md:text-[10px] font-semibold rounded-full shrink-0",
                 modelConfig?.provider === 'anthropic'
-                  ? "bg-orange-100 text-orange-700 border border-orange-300"
-                  : "bg-green-100 text-green-700 border border-green-300"
+                  ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700"
+                  : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700"
               )}>
                 {modelConfig?.displayName || agentModel}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground truncate">
               {agent.description || 'Assistant IA personnalisé'}
             </p>
           </div>
@@ -232,8 +243,9 @@ export function ChatArea() {
           size="icon"
           onClick={handleOpenSettings}
           title="Paramètres de l'agent"
+          className="shrink-0 transition-smooth hover:bg-accent"
         >
-          <Settings2 className="h-5 w-5" />
+          <Settings2 className="h-4 w-4 md:h-5 md:w-5" />
         </Button>
       </div>
 
@@ -303,30 +315,42 @@ export function ChatArea() {
       {selectedConversationId && (
         <>
           {/* Messages */}
-          <ScrollArea className="flex-1 px-6 py-4">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 px-3 md:px-6 py-3 md:py-4">
             {messages.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                  <MessageSquare className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-                  <h4 className="mb-2 font-semibold">Commencez la conversation</h4>
-                  <p className="text-sm text-muted-foreground">
+              <div className="flex h-full items-center justify-center animate-fade-in">
+                <div className="text-center px-4">
+                  <MessageSquare className="mx-auto mb-3 h-10 w-10 md:h-12 md:w-12 text-muted-foreground/50 animate-bounce-slow" />
+                  <h4 className="mb-2 font-semibold text-sm md:text-base">Commencez la conversation</h4>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     Posez votre première question à {agent.name}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
+              <div className="space-y-4 md:space-y-6">
+                {messages.map((message, index) => (
+                  <div
+                    key={message.id}
+                    className="animate-slide-up"
+                    style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
+                  >
+                    <MessageBubble message={message} />
+                  </div>
                 ))}
                 {/* Typing indicator when agent is responding */}
-                {messages.some(msg => msg.isLoading) && <TypingIndicator />}
+                {messages.some(msg => msg.isLoading) && (
+                  <div className="animate-fade-in">
+                    <TypingIndicator />
+                  </div>
+                )}
+                {/* Invisible element at the bottom for auto-scroll */}
+                <div ref={messagesEndRef} />
               </div>
             )}
           </ScrollArea>
 
-          {/* Message Input */}
-          <div className="border-t p-4">
+          {/* Message Input - Fixed at bottom */}
+          <div className="border-t p-3 md:p-4 bg-background">
             <MessageInput />
           </div>
         </>

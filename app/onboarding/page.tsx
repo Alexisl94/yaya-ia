@@ -62,18 +62,18 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header with Cancel Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-slide-down">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Créer un nouvel agent</h1>
-          <p className="text-xs text-slate-600 mt-0.5">Configurez votre assistant IA personnalisé</p>
+          <h1 className="text-xl font-semibold dark:text-slate-100">Créer un nouvel agent</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Configurez votre assistant IA personnalisé</p>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleCancel}
-          className="text-slate-500 hover:text-slate-700 h-8"
+          className="text-muted-foreground hover:text-foreground h-8 transition-smooth"
         >
           <X className="w-4 h-4 mr-1.5" />
           Annuler
@@ -81,11 +81,15 @@ export default function OnboardingPage() {
       </div>
 
       {/* Stepper */}
-      <OnboardingStepper currentStep={currentStep} />
+      <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+        <OnboardingStepper currentStep={currentStep} />
+      </div>
 
       {/* Step Content */}
-      <div className="bg-white rounded-lg border border-slate-200 p-6">
-        {renderStep()}
+      <div className="bg-card rounded-lg border shadow-sm p-6 animate-scale-in" style={{ animationDelay: '200ms' }}>
+        <div className="animate-slide-in-right">
+          {renderStep()}
+        </div>
       </div>
     </div>
   )

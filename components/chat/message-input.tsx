@@ -9,12 +9,18 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Loader2, Paperclip, X, Globe, Search } from 'lucide-react'
+import { Send, Loader2, Paperclip, X, Globe, Search, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FileUploader } from '@/components/chat/file-uploader'
 import { WebScraper } from '@/components/chat/web-scraper'
 import { WebSearcher } from '@/components/chat/web-searcher'
 import { MessageAttachment } from '@/components/chat/message-attachment'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { ConversationAttachment } from '@/types/database'
 
 export function MessageInput() {
@@ -35,19 +41,32 @@ export function MessageInput() {
     }
   }, [message])
 
+  // Auto-focus on textarea when conversation is selected
+  useEffect(() => {
+    if (selectedConversationId && textareaRef.current && !isLoading) {
+      textareaRef.current.focus()
+    }
+  }, [selectedConversationId, isLoading])
+
   const handleUploadComplete = (attachment: ConversationAttachment & { signed_url?: string; thumbnail_url?: string }) => {
     setPendingAttachments(prev => [...prev, attachment])
     setShowUploader(false)
+    // Refocus on input after closing modal
+    setTimeout(() => textareaRef.current?.focus(), 100)
   }
 
   const handleScrapeComplete = (attachments: ConversationAttachment[]) => {
     setPendingAttachments(prev => [...prev, ...attachments])
     setShowScraper(false)
+    // Refocus on input after closing modal
+    setTimeout(() => textareaRef.current?.focus(), 100)
   }
 
   const handleSearchComplete = (attachments: ConversationAttachment[]) => {
     setPendingAttachments(prev => [...prev, ...attachments])
     setShowWebSearcher(false)
+    // Refocus on input after closing modal
+    setTimeout(() => textareaRef.current?.focus(), 100)
   }
 
   const handleRemoveAttachment = (attachmentId: string) => {
@@ -320,7 +339,7 @@ export function MessageInput() {
         </div>
       )}
 
-      <div className="flex items-end gap-3">
+      <div className="flex items-end gap-2 md:gap-3">
         <div className="relative flex-1">
           <Textarea
             ref={textareaRef}
@@ -330,63 +349,100 @@ export function MessageInput() {
             placeholder="Écrivez votre message..."
             disabled={isLoading}
             className={cn(
-              'min-h-[56px] resize-none pr-12 rounded-2xl border-2',
-              'focus:border-primary-500 transition-colors',
+              'min-h-[48px] md:min-h-[56px] resize-none pr-12 rounded-2xl border-2',
+              'focus:border-primary-500 transition-smooth',
               isLoading && 'opacity-60'
             )}
             rows={1}
           />
           {message.length > 0 && (
-            <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
+            <div className="absolute bottom-2 md:bottom-3 right-3 text-xs text-muted-foreground">
               {message.length}
             </div>
           )}
         </div>
 
-        {/* Paperclip Button */}
-        <Button
-          onClick={() => setShowUploader(true)}
-          disabled={isLoading || !selectedConversationId}
-          size="icon"
-          variant="outline"
-          className={cn(
-            'h-[56px] w-[56px] rounded-2xl shadow-sm',
-            'hover:shadow-md transition-all',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
-          )}
-        >
-          <Paperclip className="h-5 w-5" />
-        </Button>
+        {/* Mobile Actions Menu - Shown only on small screens */}
+        <div className="sm:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                disabled={isLoading || !selectedConversationId}
+                size="icon"
+                variant="outline"
+                className={cn(
+                  'h-[48px] w-[48px] rounded-2xl shadow-sm',
+                  'hover:shadow-md transition-smooth',
+                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                )}
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 animate-scale-in">
+              <DropdownMenuItem onClick={() => setShowUploader(true)}>
+                <Paperclip className="mr-2 h-4 w-4" />
+                <span>Joindre un fichier</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowScraper(true)}>
+                <Globe className="mr-2 h-4 w-4" />
+                <span>Scraper une page</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowWebSearcher(true)}>
+                <Search className="mr-2 h-4 w-4" />
+                <span>Recherche web</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-        {/* Web Scraper Button */}
-        <Button
-          onClick={() => setShowScraper(true)}
-          disabled={isLoading || !selectedConversationId}
-          size="icon"
-          variant="outline"
-          className={cn(
-            'h-[56px] w-[56px] rounded-2xl shadow-sm',
-            'hover:shadow-md transition-all',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
-          )}
-        >
-          <Globe className="h-5 w-5" />
-        </Button>
+        {/* Action Buttons - Hidden on small mobile, shown on md+ */}
+        <div className="hidden sm:flex items-end gap-2">
+          {/* Paperclip Button */}
+          <Button
+            onClick={() => setShowUploader(true)}
+            disabled={isLoading || !selectedConversationId}
+            size="icon"
+            variant="outline"
+            className={cn(
+              'h-[48px] w-[48px] md:h-[56px] md:w-[56px] rounded-2xl shadow-sm',
+              'hover:shadow-md hover-lift transition-smooth',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            <Paperclip className="h-4 w-4 md:h-5 md:w-5" />
+          </Button>
 
-        {/* Web Search Button */}
-        <Button
-          onClick={() => setShowWebSearcher(true)}
-          disabled={isLoading || !selectedConversationId}
-          size="icon"
-          variant="outline"
-          className={cn(
-            'h-[56px] w-[56px] rounded-2xl shadow-sm',
-            'hover:shadow-md transition-all',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
-          )}
-        >
-          <Search className="h-5 w-5" />
-        </Button>
+          {/* Web Scraper Button */}
+          <Button
+            onClick={() => setShowScraper(true)}
+            disabled={isLoading || !selectedConversationId}
+            size="icon"
+            variant="outline"
+            className={cn(
+              'h-[48px] w-[48px] md:h-[56px] md:w-[56px] rounded-2xl shadow-sm',
+              'hover:shadow-md hover-lift transition-smooth',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            <Globe className="h-4 w-4 md:h-5 md:w-5" />
+          </Button>
+
+          {/* Web Search Button */}
+          <Button
+            onClick={() => setShowWebSearcher(true)}
+            disabled={isLoading || !selectedConversationId}
+            size="icon"
+            variant="outline"
+            className={cn(
+              'h-[48px] w-[48px] md:h-[56px] md:w-[56px] rounded-2xl shadow-sm',
+              'hover:shadow-md hover-lift transition-smooth',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            <Search className="h-4 w-4 md:h-5 md:w-5" />
+          </Button>
+        </div>
 
         {/* Send Button */}
         <Button
@@ -394,15 +450,15 @@ export function MessageInput() {
           disabled={(!message.trim() && pendingAttachments.length === 0) || isLoading}
           size="icon"
           className={cn(
-            'h-[56px] w-[56px] rounded-2xl shadow-md',
-            'gradient-primary hover:shadow-lg transition-all',
+            'h-[48px] w-[48px] md:h-[56px] md:w-[56px] rounded-2xl shadow-md',
+            'gradient-primary hover:shadow-lg hover-lift transition-smooth',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
           ) : (
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4 md:h-5 md:w-5" />
           )}
         </Button>
       </div>

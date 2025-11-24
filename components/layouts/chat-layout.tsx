@@ -5,11 +5,13 @@
 
 'use client'
 
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Menu, Settings, User, LayoutGrid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DoggoLogo } from '@/components/ui/doggo-logo'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +30,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ClientOnly } from '@/components/client-only'
 import Link from 'next/link'
+import { useUserProfile } from '@/lib/hooks/use-user-profile'
 
 interface ChatLayoutProps {
   children: ReactNode
@@ -38,11 +41,42 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
   const { isSidebarOpen, toggleSidebar } = useChatStore()
   const router = useRouter()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [userId, setUserId] = useState<string | undefined>()
+  const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now())
+  const { profile } = useUserProfile(userId)
+
+  // Refresh avatar timestamp when profile changes
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarTimestamp(Date.now())
+    }
+  }, [profile?.avatar_url])
+
+  // Get current user
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      }
+    }
+    getUser()
+  }, [])
 
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
@@ -68,6 +102,10 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <ClientOnly>
+            <ThemeToggle />
+          </ClientOnly>
+
           <Link href="/agents">
             <Button
               variant="ghost"
@@ -92,16 +130,35 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
           <ClientOnly>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-accent">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                  <Avatar className="h-10 w-10" key={avatarTimestamp}>
+                    {profile?.avatar_url ? (
+                      <AvatarImage
+                        src={`${profile.avatar_url}?v=${avatarTimestamp}`}
+                        alt={profile.full_name || profile.email}
+                      />
+                    ) : null}
+                    <AvatarFallback className="bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+                      {profile?.full_name ? getInitials(profile.full_name) : <User className="h-5 w-5" />}
+                    </AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                {profile && (
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-0.5 leading-none">
+                      <p className="font-medium text-sm">{profile.full_name || 'Utilisateur'}</p>
+                      <p className="text-xs text-muted-foreground">{profile.email}</p>
+                    </div>
+                  </div>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push('/agents')}>
                   <LayoutGrid className="mr-2 h-4 w-4" />
                   <span>Mes Agents</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profil</span>
                 </DropdownMenuItem>
@@ -158,11 +215,17 @@ export function ChatLayout({ children, sidebar }: ChatLayoutProps) {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 className="text-sm font-medium">Apparence</h3>
-                <p className="text-sm text-muted-foreground">
-                  Les paramètres de thème seront bientôt disponibles.
-                </p>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">Thème</p>
+                    <p className="text-xs text-muted-foreground">
+                      Choisissez votre thème préféré
+                    </p>
+                  </div>
+                  <ThemeToggle />
+                </div>
               </div>
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Notifications</h3>

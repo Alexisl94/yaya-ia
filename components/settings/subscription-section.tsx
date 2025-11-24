@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Loader2, Check, Zap, Crown, Sparkles, ArrowRight } from 'lucide-react'
+import { Loader2, Check, Zap, Crown, Sparkles, ArrowRight, Settings2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import {
@@ -14,63 +14,27 @@ import {
   getDoggoProgressColor,
   getDoggoStatusMessage,
 } from '@/lib/utils/doggo-pricing'
+import { getAllPlans, type SubscriptionPlan } from '@/lib/pricing/subscription-plans'
+import type { SubscriptionTier } from '@/types/database'
+import { toast } from 'sonner'
 
 interface SubscriptionSectionProps {
   userId: string
 }
 
-const PLANS = [
-  {
-    id: 'free',
-    name: 'Gratuit',
-    price: 0,
-    icon: Sparkles,
-    features: [
-      '1 agent IA',
-      '50 conversations/mois',
-      'Modèles économiques',
-      'Support communautaire',
-    ],
-    color: 'from-slate-500 to-slate-600',
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    price: 10,
-    icon: Zap,
-    popular: true,
-    features: [
-      '3 agents IA',
-      '300 conversations/mois',
-      'Tous les modèles économiques',
-      '20 requêtes GPT-4o/mois',
-      'Support prioritaire',
-      'Optimisation automatique',
-    ],
-    color: 'from-amber-500 to-orange-600',
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 30,
-    icon: Crown,
-    features: [
-      '10 agents IA',
-      '800 conversations/mois',
-      'Tous les modèles disponibles',
-      '50 requêtes GPT-4o/mois',
-      '10 requêtes Opus/mois',
-      'Support premium 24/7',
-      'Analyses avancées',
-    ],
-    color: 'from-purple-500 to-purple-600',
-  },
-]
+// Mapper les icons
+const ICON_MAP = {
+  free: Sparkles,
+  pro: Zap,
+  enterprise: Crown,
+}
 
 export function SubscriptionSection({ userId }: SubscriptionSectionProps) {
   const [loading, setLoading] = useState(true)
-  const [currentPlan, setCurrentPlan] = useState('free')
+  const [upgrading, setUpgrading] = useState<string | null>(null)
+  const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>('free')
   const [monthlyBudget, setMonthlyBudget] = useState<any>(null)
+  const plans = getAllPlans()
 
   useEffect(() => {
     loadSubscriptionData()
@@ -81,15 +45,15 @@ export function SubscriptionSection({ userId }: SubscriptionSectionProps) {
       setLoading(true)
       const supabase = createClient()
 
-      // Load user subscription (from profiles or a subscriptions table)
+      // Load user subscription
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_plan')
+        .select('subscription_tier, subscription_status')
         .eq('id', userId)
         .single()
 
       if (profile) {
-        setCurrentPlan(profile.subscription_plan || 'free')
+        setCurrentPlan((profile.subscription_tier as SubscriptionTier) || 'free')
       }
 
       // Load monthly budget
@@ -100,15 +64,66 @@ export function SubscriptionSection({ userId }: SubscriptionSectionProps) {
       }
     } catch (error) {
       console.error('Error loading subscription:', error)
+      toast.error('Erreur lors du chargement des données')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleUpgrade = (planId: string) => {
-    // TODO: Implement Stripe checkout
-    console.log('Upgrade to:', planId)
-    alert('La fonctionnalité de paiement Stripe sera bientôt disponible !')
+  const handleUpgrade = async (planId: SubscriptionTier) => {
+    if (planId === 'free') {
+      return
+    }
+
+    try {
+      setUpgrading(planId)
+
+      // Créer une session de checkout Stripe
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId,
+          billingPeriod: 'monthly', // ou 'yearly' si vous voulez offrir le choix
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.data.url) {
+        // Rediriger vers Stripe Checkout
+        window.location.href = result.data.url
+      } else {
+        throw new Error(result.error || 'Erreur lors de la création de la session')
+      }
+    } catch (error) {
+      console.error('Error upgrading plan:', error)
+      toast.error(error instanceof Error ? error.message : 'Erreur lors du paiement')
+      setUpgrading(null)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    try {
+      setUpgrading('portal')
+
+      // Ouvrir le portail client Stripe
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.data.url) {
+        window.location.href = result.data.url
+      } else {
+        throw new Error(result.error || 'Erreur lors de l\'ouverture du portail')
+      }
+    } catch (error) {
+      console.error('Error opening portal:', error)
+      toast.error('Erreur lors de l\'ouverture du portail de gestion')
+      setUpgrading(null)
+    }
   }
 
   if (loading) {
@@ -176,11 +191,40 @@ export function SubscriptionSection({ userId }: SubscriptionSectionProps) {
         </Card>
       )}
 
+      {/* Manage Subscription Button (for paid plans) */}
+      {currentPlan !== 'free' && (
+        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Gérer mon abonnement
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Modifier votre plan, mettre à jour vos informations de paiement, ou annuler votre abonnement
+              </p>
+            </div>
+            <Button
+              onClick={handleManageSubscription}
+              disabled={upgrading === 'portal'}
+              variant="outline"
+            >
+              {upgrading === 'portal' ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Settings2 className="w-4 h-4 mr-2" />
+              )}
+              Gérer
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Plans */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {PLANS.map((plan) => {
-          const Icon = plan.icon
+        {plans.map((plan) => {
+          const Icon = ICON_MAP[plan.id]
           const isCurrentPlan = currentPlan === plan.id
+          const isUpgrading = upgrading === plan.id
 
           return (
             <Card
@@ -205,15 +249,18 @@ export function SubscriptionSection({ userId }: SubscriptionSectionProps) {
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">{plan.price}€</span>
+                <CardDescription className="text-sm">
+                  {plan.description}
+                </CardDescription>
+                <div className="flex items-baseline gap-2 pt-2">
+                  <span className="text-4xl font-bold">{plan.priceMonthly}€</span>
                   <span className="text-muted-foreground">/mois</span>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-4">
                 <ul className="space-y-3">
-                  {plan.features.map((feature, index) => (
+                  {plan.limits.features.map((feature, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <Check className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                       <span className="text-sm text-slate-700">{feature}</span>
@@ -223,23 +270,28 @@ export function SubscriptionSection({ userId }: SubscriptionSectionProps) {
 
                 <Button
                   onClick={() => handleUpgrade(plan.id)}
-                  disabled={isCurrentPlan}
+                  disabled={isCurrentPlan || isUpgrading}
                   className={cn(
                     "w-full",
-                    plan.popular && "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+                    plan.popular && !isCurrentPlan && "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
                   )}
-                  variant={plan.popular ? "default" : "outline"}
+                  variant={plan.popular && !isCurrentPlan ? "default" : "outline"}
                 >
-                  {isCurrentPlan ? (
+                  {isUpgrading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Chargement...
+                    </>
+                  ) : isCurrentPlan ? (
                     <>
                       <Check className="w-4 h-4 mr-2" />
                       Plan actuel
                     </>
-                  ) : plan.price === 0 ? (
+                  ) : plan.priceMonthly === 0 ? (
                     'Plan actif'
                   ) : (
                     <>
-                      Passer à {plan.name}
+                      {plan.ctaText}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}

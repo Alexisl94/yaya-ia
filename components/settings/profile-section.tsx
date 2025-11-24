@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Loader2, Upload, User } from 'lucide-react'
+import { Loader2, Upload, User, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface ProfileSectionProps {
   userId: string
@@ -17,14 +18,15 @@ interface ProfileSectionProps {
 }
 
 export function ProfileSection({ userId, userEmail }: ProfileSectionProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [initializing, setInitializing] = useState(true)
   const [profile, setProfile] = useState({
     full_name: '',
     avatar_url: '',
-    bio: '',
-    phone: '',
   })
+  const [avatarKey, setAvatarKey] = useState(0) // Pour forcer le refresh de l'avatar
 
   useEffect(() => {
     loadProfile()
@@ -32,25 +34,61 @@ export function ProfileSection({ userId, userEmail }: ProfileSectionProps) {
 
   const loadProfile = async () => {
     try {
+      setInitializing(true)
       const supabase = createClient()
+
+      // Essayer de charger depuis public.users
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
+        .from('users')
+        .select('full_name, avatar_url')
         .eq('id', userId)
         .single()
 
-      if (error && error.code !== 'PGRST116') throw error
+      if (error) {
+        // Si l'utilisateur n'existe pas (code PGRST116)
+        if (error.code === 'PGRST116') {
+          console.log('User not found in public.users, creating entry...')
 
+          // Créer l'utilisateur dans public.users
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: userId,
+              email: userEmail,
+              full_name: userEmail.split('@')[0], // Utiliser la partie avant @ comme nom par défaut
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+
+          if (insertError) {
+            console.error('Error creating user:', insertError)
+            toast.error('Impossible de créer le profil utilisateur')
+          } else {
+            toast.success('Profil créé avec succès')
+            // Recharger le profil
+            await loadProfile()
+          }
+          return
+        }
+
+        // Autre erreur
+        console.error('Error loading profile:', error)
+        toast.error(`Erreur: ${error.message}`)
+        return
+      }
+
+      // Profil chargé avec succès
       if (data) {
         setProfile({
           full_name: data.full_name || '',
           avatar_url: data.avatar_url || '',
-          bio: data.bio || '',
-          phone: data.phone || '',
         })
       }
     } catch (error) {
-      console.error('Error loading profile:', error)
+      console.error('Unexpected error loading profile:', error)
+      toast.error('Erreur inattendue lors du chargement')
+    } finally {
+      setInitializing(false)
     }
   }
 
@@ -60,12 +98,13 @@ export function ProfileSection({ userId, userEmail }: ProfileSectionProps) {
       const supabase = createClient()
 
       const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: userId,
-          ...profile,
+        .from('users')
+        .update({
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
           updated_at: new Date().toISOString(),
         })
+        .eq('id', userId)
 
       if (error) throw error
 
@@ -98,38 +137,75 @@ export function ProfileSection({ userId, userEmail }: ProfileSectionProps) {
       const supabase = createClient()
       const fileExt = file.name.split('.').pop()
       const fileName = `${userId}-${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
+      const filePath = `${fileName}`
+
+      // Delete old avatar if exists
+      if (profile.avatar_url) {
+        try {
+          const oldPath = profile.avatar_url.split('/avatars/').pop()
+          if (oldPath) {
+            await supabase.storage.from('avatars').remove([oldPath])
+          }
+        } catch (err) {
+          console.log('No old avatar to delete or error deleting:', err)
+        }
+      }
 
       // Upload to storage
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw new Error(`Erreur d'upload: ${uploadError.message}`)
+      }
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath)
 
-      // Update profile
-      setProfile(prev => ({ ...prev, avatar_url: publicUrl }))
-
-      // Save to database
-      await supabase
-        .from('profiles')
-        .upsert({
-          id: userId,
+      // Save to database first
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
           avatar_url: publicUrl,
           updated_at: new Date().toISOString(),
         })
+        .eq('id', userId)
 
+      if (updateError) {
+        console.error('Database update error:', updateError)
+        throw new Error(`Erreur de mise à jour: ${updateError.message}`)
+      }
+
+      // Update profile in state immediately
+      const newProfile = { ...profile, avatar_url: publicUrl }
+      setProfile(newProfile)
+
+      // Force avatar refresh with cache busting
+      setAvatarKey(prev => prev + 1)
+
+      // Show success message
       toast.success('Photo de profil mise à jour')
+
+      // Force a hard refresh of the page to update avatar everywhere
+      // This ensures the header and all components get the new avatar
+      setTimeout(() => {
+        window.location.href = window.location.href
+      }, 500)
     } catch (error) {
       console.error('Error uploading avatar:', error)
-      toast.error('Erreur lors du téléchargement de l\'image')
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+      toast.error(`Erreur: ${errorMessage}`)
     } finally {
       setUploading(false)
+      // Reset file input
+      e.target.value = ''
     }
   }
 
@@ -142,19 +218,48 @@ export function ProfileSection({ userId, userEmail }: ProfileSectionProps) {
       .slice(0, 2)
   }
 
+  // Loading state pendant l'initialisation
+  if (initializing) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-sm text-muted-foreground">Chargement du profil...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Informations personnelles</CardTitle>
-        <CardDescription>
-          Gérez vos informations de profil visibles par votre équipe
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Informations personnelles</CardTitle>
+            <CardDescription>
+              Gérez vos informations de profil visibles par votre équipe
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={loadProfile}
+            title="Actualiser le profil"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Avatar */}
         <div className="flex items-center gap-6">
-          <Avatar className="h-24 w-24">
-            <AvatarImage src={profile.avatar_url} />
+          <Avatar className="h-24 w-24" key={avatarKey}>
+            <AvatarImage
+              src={profile.avatar_url ? `${profile.avatar_url}?v=${avatarKey}` : undefined}
+              alt={profile.full_name || userEmail}
+            />
             <AvatarFallback className="text-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white">
               {profile.full_name ? getInitials(profile.full_name) : <User />}
             </AvatarFallback>
@@ -223,30 +328,6 @@ export function ProfileSection({ userId, userEmail }: ProfileSectionProps) {
           <p className="text-xs text-muted-foreground">
             L'email ne peut pas être modifié pour des raisons de sécurité
           </p>
-        </div>
-
-        {/* Phone */}
-        <div className="space-y-2">
-          <Label htmlFor="phone">Téléphone (optionnel)</Label>
-          <Input
-            id="phone"
-            type="tel"
-            value={profile.phone}
-            onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-            placeholder="+33 6 12 34 56 78"
-          />
-        </div>
-
-        {/* Bio */}
-        <div className="space-y-2">
-          <Label htmlFor="bio">Biographie (optionnel)</Label>
-          <Textarea
-            id="bio"
-            value={profile.bio}
-            onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-            placeholder="Parlez-nous un peu de vous..."
-            rows={4}
-          />
         </div>
 
         {/* Save Button */}
